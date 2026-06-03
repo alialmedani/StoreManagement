@@ -1,0 +1,24 @@
+<Solution>
+    <Configurations>
+        <Platform Name="Any CPU" />
+    </Configurations>
+    <Folder Name="/src/">
+        <Project Path="src/StoreManagement.Domain/StoreManagement.Domain.csproj" />
+        <Project Path="src/StoreManagement.Application/StoreManagement.Application.csproj" />
+        <Project Path="src/StoreManagement.EntityFrameworkCore/StoreManagement.EntityFrameworkCore.csproj" />
+        <Project Path="src/StoreManagement.Web/StoreManagement.Web.csproj" />
+        <Project Path="src/StoreManagement.Domain.Shared/StoreManagement.Domain.Shared.csproj" />
+        <Project Path="src/StoreManagement.Application.Contracts/StoreManagement.Application.Contracts.csproj" />
+        <Project Path="src/StoreManagement.HttpApi/StoreManagement.HttpApi.csproj" />
+        <Project Path="src/StoreManagement.HttpApi.Client/StoreManagement.HttpApi.Client.csproj" />
+        <Project Path="src/StoreManagement.DbMigrator/StoreManagement.DbMigrator.csproj" />
+    </Folder>
+    <Folder Name="/test/">
+        <Project Path="test/StoreManagement.Application.Tests/StoreManagement.Application.Tests.csproj" />
+        <Project Path="test/StoreManagement.Web.Tests/StoreManagement.Web.Tests.csproj" />
+        <Project Path="test/StoreManagement.EntityFrameworkCore.Tests/StoreManagement.EntityFrameworkCore.Tests.csproj" />
+        <Project Path="test/StoreManagement.TestBase/StoreManagement.TestBase.csproj" />
+        <Project Path="test/StoreManagement.Domain.Tests/StoreManagement.Domain.Tests.csproj" />
+        <Project Path="test/StoreManagement.HttpApi.Client.ConsoleTestApp/StoreManagement.HttpApi.Client.ConsoleTestApp.csproj" />
+    </Folder>
+</Solution>

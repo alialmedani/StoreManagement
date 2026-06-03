@@ -1,0 +1,113 @@
+{
+  "template": "app",
+  "imports": {
+    "Volo.Abp.LeptonXLiteTheme": {
+      "version": "5.4.0",
+      "isInstalled": true,
+      "creationTime": "06/03/2026 08:21:39 +00:00"
+    },
+    "Volo.Abp.Account": {
+      "version": "10.4.0",
+      "isInstalled": true,
+      "creationTime": "06/03/2026 08:21:39 +00:00"
+    },
+    "Volo.Abp.OpenIddict": {
+      "version": "10.4.0",
+      "isInstalled": true,
+      "creationTime": "06/03/2026 08:21:39 +00:00"
+    },
+    "Volo.Abp.Identity": {
+      "version": "10.4.0",
+      "isInstalled": true,
+      "creationTime": "06/03/2026 08:21:39 +00:00"
+    },
+    "Volo.Abp.TenantManagement": {
+      "version": "10.4.0",
+      "isInstalled": true,
+      "creationTime": "06/03/2026 08:21:39 +00:00"
+    },
+    "Volo.Abp.SettingManagement": {
+      "version": "10.4.0",
+      "isInstalled": true,
+      "creationTime": "06/03/2026 08:21:39 +00:00"
+    },
+    "Volo.Abp.PermissionManagement": {
+      "version": "10.4.0",
+      "isInstalled": true,
+      "creationTime": "06/03/2026 08:21:39 +00:00"
+    },
+    "Volo.Abp.FeatureManagement": {
+      "version": "10.4.0",
+      "isInstalled": true,
+      "creationTime": "06/03/2026 08:21:39 +00:00"
+    }
+  },
+  "folders": {
+    "items": {
+      "src": {},
+      "test": {}
+    }
+  },
+  "packages": {
+    "StoreManagement.Application": {
+      "path": "src/StoreManagement.Application/StoreManagement.Application.abppkg",
+      "folder": "src"
+    },
+    "StoreManagement.Application.Tests": {
+      "path": "test/StoreManagement.Application.Tests/StoreManagement.Application.Tests.abppkg",
+      "folder": "test"
+    },
+    "StoreManagement.Domain.Shared": {
+      "path": "src/StoreManagement.Domain.Shared/StoreManagement.Domain.Shared.abppkg",
+      "folder": "src"
+    },
+    "StoreManagement.Application.Contracts": {
+      "path": "src/StoreManagement.Application.Contracts/StoreManagement.Application.Contracts.abppkg",
+      "folder": "src"
+    },
+    "StoreManagement.HttpApi": {
+      "path": "src/StoreManagement.HttpApi/StoreManagement.HttpApi.abppkg",
+      "folder": "src"
+    },
+    "StoreManagement.HttpApi.Client": {
+      "path": "src/StoreManagement.HttpApi.Client/StoreManagement.HttpApi.Client.abppkg",
+      "folder": "src"
+    },
+    "StoreManagement.Web": {
+      "path": "src/StoreManagement.Web/StoreManagement.Web.abppkg",
+      "folder": "src"
+    },
+    "StoreManagement.Web.Tests": {
+      "path": "test/StoreManagement.Web.Tests/StoreManagement.Web.Tests.abppkg",
+      "folder": "test"
+    },
+    "StoreManagement.EntityFrameworkCore.Tests": {
+      "path": "test/StoreManagement.EntityFrameworkCore.Tests/StoreManagement.EntityFrameworkCore.Tests.abppkg",
+      "folder": "test"
+    },
+    "StoreManagement.EntityFrameworkCore": {
+      "path": "src/StoreManagement.EntityFrameworkCore/StoreManagement.EntityFrameworkCore.abppkg",
+      "folder": "src"
+    },
+    "StoreManagement.TestBase": {
+      "path": "test/StoreManagement.TestBase/StoreManagement.TestBase.abppkg",
+      "folder": "test"
+    },
+    "StoreManagement.Domain.Tests": {
+      "path": "test/StoreManagement.Domain.Tests/StoreManagement.Domain.Tests.abppkg",
+      "folder": "test"
+    },
+    "StoreManagement.HttpApi.Client.ConsoleTestApp": {
+      "path": "test/StoreManagement.HttpApi.Client.ConsoleTestApp/StoreManagement.HttpApi.Client.ConsoleTestApp.abppkg",
+      "folder": "test"
+    },
+    "StoreManagement.DbMigrator": {
+      "path": "src/StoreManagement.DbMigrator/StoreManagement.DbMigrator.abppkg",
+      "folder": "src"
+    },
+    "StoreManagement.Domain": {
+      "path": "src/StoreManagement.Domain/StoreManagement.Domain.abppkg",
+      "folder": "src"
+    }
+  }
+}
