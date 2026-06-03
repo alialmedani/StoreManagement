@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using StoreManagement.Categories;
+using StoreManagement.Products;
 using Volo.Abp.AuditLogging.EntityFrameworkCore;
 using Volo.Abp.BackgroundJobs.EntityFrameworkCore;
 using Volo.Abp.BlobStoring.Database.EntityFrameworkCore;
@@ -31,6 +32,10 @@ public class StoreManagementDbContext :
      */
 
     public DbSet<Category> Categories { get; set; }
+
+    public DbSet<Product> Products { get; set; }
+
+    public DbSet<ProductVariant> ProductVariants { get; set; }
 
     #region Entities from the modules
 
@@ -113,6 +118,109 @@ public class StoreManagementDbContext :
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
                 .HasDatabaseName("UX_StoreManagement_Categories_NormalizedName_Active");
+        });
+
+        builder.Entity<Product>(b =>
+        {
+            b.ToTable(
+                StoreManagementConsts.DbTablePrefix + "Products",
+                StoreManagementConsts.DbSchema
+            );
+
+            b.ConfigureByConvention();
+
+            b.Property(product => product.Name)
+                .IsRequired()
+                .HasMaxLength(ProductConsts.MaxNameLength);
+
+            b.Property(product => product.NormalizedName)
+                .IsRequired()
+                .HasMaxLength(ProductConsts.MaxNameLength);
+
+            b.Property(product => product.Description)
+                .HasMaxLength(ProductConsts.MaxDescriptionLength);
+
+            b.Property(product => product.Price)
+                .IsRequired()
+                .HasPrecision(18, 2);
+
+            b.Property(product => product.IsActive)
+                .IsRequired();
+
+            b.Property(product => product.TargetAudience)
+                .IsRequired();
+
+            b.Property(product => product.CategoryId)
+                .IsRequired();
+
+            b.HasOne(product => product.Category)
+                .WithMany()
+                .HasForeignKey(product => product.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            b.HasMany(product => product.Variants)
+                .WithOne(variant => variant.Product)
+                .HasForeignKey(variant => variant.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasIndex(product => new
+                {
+                    product.CategoryId,
+                    product.NormalizedName
+                })
+                .IsUnique()
+                .HasFilter("[IsDeleted] = 0")
+                .HasDatabaseName("UX_StoreManagement_Products_CategoryId_NormalizedName_Active");
+        });
+
+        builder.Entity<ProductVariant>(b =>
+        {
+            b.ToTable(
+                StoreManagementConsts.DbTablePrefix + "ProductVariants",
+                StoreManagementConsts.DbSchema
+            );
+
+            b.ConfigureByConvention();
+
+            b.Property(variant => variant.ProductId)
+                .IsRequired();
+
+            b.Property(variant => variant.Color)
+                .IsRequired()
+                .HasMaxLength(ProductVariantConsts.MaxColorLength);
+
+            b.Property(variant => variant.NormalizedColor)
+                .IsRequired()
+                .HasMaxLength(ProductVariantConsts.MaxColorLength);
+
+            b.Property(variant => variant.Size)
+                .IsRequired()
+                .HasMaxLength(ProductVariantConsts.MaxSizeLength);
+
+            b.Property(variant => variant.NormalizedSize)
+                .IsRequired()
+                .HasMaxLength(ProductVariantConsts.MaxSizeLength);
+
+            b.Property(variant => variant.StockQuantity)
+                .IsRequired();
+
+            b.HasOne(variant => variant.Product)
+                .WithMany(product => product.Variants)
+                .HasForeignKey(variant => variant.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasIndex(variant => new
+                {
+                    variant.ProductId,
+                    variant.NormalizedColor,
+                    variant.NormalizedSize
+                })
+                .IsUnique()
+                .HasFilter("[IsDeleted] = 0")
+                .HasDatabaseName("UX_StoreManagement_ProductVariants_ProductId_Color_Size_Active");
+
+            b.HasIndex(variant => variant.ProductId)
+                .HasDatabaseName("IX_StoreManagement_ProductVariants_ProductId");
         });
     }
 }

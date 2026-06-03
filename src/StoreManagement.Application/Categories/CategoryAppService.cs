@@ -8,24 +8,27 @@ using Volo.Abp.Application.Services;
 using Volo.Abp.Data;
 using Volo.Abp.Domain.Entities;
 using Volo.Abp.Domain.Repositories;
-using Volo.Abp.Linq;
-using Volo.Abp.MultiTenancy;
+using StoreManagement.Products;
+ 
 
 namespace StoreManagement.Categories;
 
 public class CategoryAppService : ApplicationService, ICategoryAppService
 {
+    private readonly IRepository<Product, Guid> _productRepository;
     private readonly IRepository<Category, Guid> _categoryRepository;
     private readonly IDataFilter<ISoftDelete> _softDeleteFilter;
 
+     
     public CategoryAppService(
         IRepository<Category, Guid> categoryRepository,
+        IRepository<Product, Guid> productRepository,
         IDataFilter<ISoftDelete> softDeleteFilter)
     {
         _categoryRepository = categoryRepository;
+        _productRepository = productRepository;
         _softDeleteFilter = softDeleteFilter;
     }
-
     public async Task<PagedResultDto<CategoryDto>> GetListAsync(StoreManagementPagedAndSortedResultRequestDto input)
     {
         var query = await _categoryRepository.GetQueryableAsync();
@@ -119,7 +122,13 @@ public class CategoryAppService : ApplicationService, ICategoryAppService
         {
             throw new BusinessException(StoreManagementDomainErrorCodes.CategoryNameAlreadyExists);
         }
-
+        if (category.SizeType != input.SizeType)
+        {
+            await EnsureCategoryHasNoProductsAsync(
+                category.Id,
+                StoreManagementDomainErrorCodes.CategorySizeTypeCannotBeChanged
+            );
+        }
         category.Rename(input.Name);
         category.SetDescription(input.Description);
         category.ChangeSizeType(input.SizeType);
@@ -133,6 +142,11 @@ public class CategoryAppService : ApplicationService, ICategoryAppService
     public async Task DeleteAsync(Guid id)
     {
         var category = await _categoryRepository.GetAsync(id);
+
+        await EnsureCategoryHasNoProductsAsync(
+            category.Id,
+            StoreManagementDomainErrorCodes.CategoryHasProducts
+        );
 
         await _categoryRepository.DeleteAsync(category, autoSave: true);
     }
@@ -229,5 +243,18 @@ public class CategoryAppService : ApplicationService, ICategoryAppService
     private static string NormalizeName(string name)
     {
         return name.Trim().ToUpperInvariant();
+    }
+    private async Task EnsureCategoryHasNoProductsAsync(Guid categoryId, string errorCode)
+    {
+        using (_softDeleteFilter.Disable())
+        {
+            var hasProducts = await _productRepository.AnyAsync(product =>
+                product.CategoryId == categoryId);
+
+            if (hasProducts)
+            {
+                throw new BusinessException(errorCode);
+            }
+        }
     }
 }
