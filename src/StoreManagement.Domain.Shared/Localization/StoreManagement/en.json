@@ -4,6 +4,11 @@
     "AppName": "StoreManagement",
     "Menu:Home": "Home",
     "LongWelcomeMessage": "Welcome to the application. This is a startup project based on the ABP framework. For more information visit",
-    "Welcome": "Welcome"
+    "Welcome": "Welcome",
+
+    "StoreManagement:CategoryNameAlreadyExists": "Category name already exists.",
+    "StoreManagement:CategoryNameRequired": "Category name is required.",
+    "StoreManagement:CategoryTextTooLong": "Category text is too long.",
+    "StoreManagement:CategoryNotDeleted": "Category does not exist or is not deleted."
   }
 }
