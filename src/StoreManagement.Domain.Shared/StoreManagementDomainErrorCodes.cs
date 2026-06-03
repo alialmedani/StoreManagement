@@ -2,5 +2,8 @@
 
 public static class StoreManagementDomainErrorCodes
 {
-    /* You can add your business exception error codes here, as constants */
+    public const string CategoryNameRequired = "StoreManagement:CategoryNameRequired";
+    public const string CategoryTextTooLong = "StoreManagement:CategoryTextTooLong";
+    public const string CategoryNameAlreadyExists = "StoreManagement:CategoryNameAlreadyExists";
+    public const string CategoryNotDeleted = "StoreManagement:CategoryNotDeleted";
 }
