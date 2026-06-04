@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using StoreManagement.Categories;
+using StoreManagement.Inventory;
 using StoreManagement.Products;
 using Volo.Abp.AuditLogging.EntityFrameworkCore;
 using Volo.Abp.BackgroundJobs.EntityFrameworkCore;
@@ -36,6 +37,8 @@ public class StoreManagementDbContext :
     public DbSet<Product> Products { get; set; }
 
     public DbSet<ProductVariant> ProductVariants { get; set; }
+
+    public DbSet<StockMovement> StockMovements { get; set; }
 
     #region Entities from the modules
 
@@ -203,9 +206,11 @@ public class StoreManagementDbContext :
 
             b.Property(variant => variant.StockQuantity)
                 .IsRequired();
+
             b.Property(variant => variant.IsActive)
                 .IsRequired()
                 .HasDefaultValue(true);
+
             b.HasOne(variant => variant.Product)
                 .WithMany(product => product.Variants)
                 .HasForeignKey(variant => variant.ProductId)
@@ -223,6 +228,48 @@ public class StoreManagementDbContext :
 
             b.HasIndex(variant => variant.ProductId)
                 .HasDatabaseName("IX_StoreManagement_ProductVariants_ProductId");
+        });
+
+        builder.Entity<StockMovement>(b =>
+        {
+            b.ToTable(
+                StoreManagementConsts.DbTablePrefix + "StockMovements",
+                StoreManagementConsts.DbSchema
+            );
+
+            b.ConfigureByConvention();
+
+            b.Property(movement => movement.ProductVariantId)
+                .IsRequired();
+
+            b.Property(movement => movement.MovementType)
+                .IsRequired();
+
+            b.Property(movement => movement.QuantityChange)
+                .IsRequired();
+
+            b.Property(movement => movement.OldQuantity)
+                .IsRequired();
+
+            b.Property(movement => movement.NewQuantity)
+                .IsRequired();
+
+            b.Property(movement => movement.Note)
+                .HasMaxLength(InventoryConsts.MaxNoteLength);
+
+            b.HasOne(movement => movement.ProductVariant)
+                .WithMany()
+                .HasForeignKey(movement => movement.ProductVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            b.HasIndex(movement => movement.ProductVariantId)
+                .HasDatabaseName("IX_StoreManagement_StockMovements_ProductVariantId");
+
+            b.HasIndex(movement => movement.MovementType)
+                .HasDatabaseName("IX_StoreManagement_StockMovements_MovementType");
+
+            b.HasIndex(movement => movement.CreationTime)
+                .HasDatabaseName("IX_StoreManagement_StockMovements_CreationTime");
         });
     }
 }

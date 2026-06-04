@@ -18,6 +18,10 @@
     "StoreManagement:ProductVariantInvalidSizeForCategory": "Variant size is not valid for this product category.",
     "StoreManagement:ProductVariantHasStock": "Cannot delete product variant because it has stock.",
     "StoreManagement:ProductVariantCannotRestoreDuplicate": "Cannot restore product variant because another active variant with the same color and size already exists.",
-    "StoreManagement:ProductHasVariants": "Cannot delete product because it has variants. Deactivate it instead."
+    "StoreManagement:ProductHasVariants": "Cannot delete product because it has variants. Deactivate it instead.",
+    "StoreManagement:InventoryProductVariantNotFound": "Product variant does not exist.",
+    "StoreManagement:InventoryQuantityChangeCannotBeZero": "Quantity change cannot be zero.",
+    "StoreManagement:InventoryStockCannotBeNegative": "Stock cannot be negative.",
+    "StoreManagement:InventoryNoteTooLong": "Inventory note is too long."
   }
 }

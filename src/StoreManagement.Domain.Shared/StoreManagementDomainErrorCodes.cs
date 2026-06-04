@@ -27,4 +27,9 @@ public static class StoreManagementDomainErrorCodes
     public const string ProductVariantHasStock = "StoreManagement:ProductVariantHasStock";
     public const string ProductVariantCannotRestoreDuplicate = "StoreManagement:ProductVariantCannotRestoreDuplicate";
     public const string ProductHasVariants = "StoreManagement:ProductHasVariants";
+    
+    public const string InventoryProductVariantNotFound = "StoreManagement:InventoryProductVariantNotFound";
+    public const string InventoryQuantityChangeCannotBeZero = "StoreManagement:InventoryQuantityChangeCannotBeZero";
+    public const string InventoryStockCannotBeNegative = "StoreManagement:InventoryStockCannotBeNegative";
+    public const string InventoryNoteTooLong = "StoreManagement:InventoryNoteTooLong";
 }

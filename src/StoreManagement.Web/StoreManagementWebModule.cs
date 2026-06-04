@@ -192,6 +192,13 @@ public class StoreManagementWebModule : AbpModule
             options.Map(StoreManagementDomainErrorCodes.ProductVariantCannotRestoreDuplicate, HttpStatusCode.Conflict);
             
             options.Map(StoreManagementDomainErrorCodes.ProductHasVariants, HttpStatusCode.Conflict);
+            
+            options.Map(StoreManagementDomainErrorCodes.InventoryProductVariantNotFound, HttpStatusCode.BadRequest);
+            options.Map(StoreManagementDomainErrorCodes.InventoryQuantityChangeCannotBeZero, HttpStatusCode.BadRequest);
+            options.Map(StoreManagementDomainErrorCodes.InventoryNoteTooLong, HttpStatusCode.BadRequest);
+
+            options.Map(StoreManagementDomainErrorCodes.InventoryStockCannotBeNegative, HttpStatusCode.Conflict);
+            
         });
     }
 
