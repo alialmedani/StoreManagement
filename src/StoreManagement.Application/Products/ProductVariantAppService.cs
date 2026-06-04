@@ -16,36 +16,6 @@ namespace StoreManagement.Products;
 
 public class ProductVariantAppService : ApplicationService, IProductVariantAppService
 {
-    private const string OneSizeLabel = "One Size";
-
-    private static readonly HashSet<string> ClothingSizes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "XS",
-        "S",
-        "M",
-        "L",
-        "XL",
-        "XXL",
-        "XXXL",
-        "2XL",
-        "3XL",
-        "4XL"
-    };
-
-    private static readonly Dictionary<string, int> ClothingSizeSortOrder = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["XS"] = 10,
-        ["S"] = 20,
-        ["M"] = 30,
-        ["L"] = 40,
-        ["XL"] = 50,
-        ["XXL"] = 60,
-        ["XXXL"] = 70,
-        ["2XL"] = 80,
-        ["3XL"] = 90,
-        ["4XL"] = 100
-    };
-
     private readonly IRepository<ProductVariant, Guid> _productVariantRepository;
     private readonly IRepository<Product, Guid> _productRepository;
     private readonly IDataFilter<ISoftDelete> _softDeleteFilter;
@@ -165,7 +135,8 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
                     Color = variant.Color == ProductVariantConsts.NoColor
                         ? null
                         : variant.Color,
-                    Size = variant.Size == ProductVariantConsts.NoSize || variant.Size == OneSizeLabel
+                    Size = variant.Size == ProductVariantConsts.NoSize ||
+                           variant.Size == ProductVariantSizeConsts.OneSize
                         ? null
                         : variant.Size,
                     StockQuantity = variant.StockQuantity,
@@ -176,7 +147,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         variants = variants
             .OrderBy(variant => variant.Color ?? string.Empty)
-            .ThenBy(variant => GetSizeSortOrder(variant.Size))
+            .ThenBy(variant => ProductVariantSizeConsts.GetSortOrder(variant.Size))
             .ThenBy(variant => variant.Size ?? string.Empty)
             .ToList();
 
@@ -195,7 +166,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
             .Where(variant => !string.IsNullOrWhiteSpace(variant.Size))
             .Select(variant => variant.Size!)
             .Distinct()
-            .OrderBy(GetSizeSortOrder)
+            .OrderBy(ProductVariantSizeConsts.GetSortOrder)
             .ThenBy(size => size)
             .ToList();
 
@@ -468,7 +439,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         return items
             .OrderBy(item => item.Color)
-            .ThenBy(item => GetSizeSortOrder(item.Size))
+            .ThenBy(item => ProductVariantSizeConsts.GetSortOrder(item.Size))
             .ThenBy(item => item.Size)
             .ToList();
     }
@@ -547,7 +518,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
     {
         if (string.IsNullOrWhiteSpace(sorting))
         {
-            return query.OrderBy(variant => variant.CreationTime);
+            return query.OrderByDescending(variant => variant.CreationTime);
         }
 
         return sorting.Trim().ToLowerInvariant() switch
@@ -564,10 +535,10 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
             "isactive" or "isactive asc" => query.OrderBy(variant => variant.IsActive),
             "isactive desc" => query.OrderByDescending(variant => variant.IsActive),
 
-            "creationtime" or "creationtime asc" => query.OrderBy(variant => variant.CreationTime),
-            "creationtime desc" => query.OrderByDescending(variant => variant.CreationTime),
+            "creationtime" or "creationtime desc" => query.OrderByDescending(variant => variant.CreationTime),
+            "creationtime asc" => query.OrderBy(variant => variant.CreationTime),
 
-            _ => query.OrderBy(variant => variant.CreationTime)
+            _ => query.OrderByDescending(variant => variant.CreationTime)
         };
     }
 
@@ -638,7 +609,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
         {
             if (rawSizes.Count == 0)
             {
-                return new List<string> { OneSizeLabel };
+                return new List<string> { ProductVariantSizeConsts.OneSize };
             }
         }
 
@@ -675,9 +646,9 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
                 : throw new BusinessException(StoreManagementDomainErrorCodes.ProductVariantInvalidSizeForCategory),
 
             CategorySizeType.OneSize => string.IsNullOrWhiteSpace(normalizedSize) ||
-                                        string.Equals(normalizedSize, OneSizeLabel, StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(normalizedSize, ProductVariantSizeConsts.OneSize, StringComparison.OrdinalIgnoreCase) ||
                                         string.Equals(normalizedSize, "OneSize", StringComparison.OrdinalIgnoreCase)
-                ? OneSizeLabel
+                ? ProductVariantSizeConsts.OneSize
                 : throw new BusinessException(StoreManagementDomainErrorCodes.ProductVariantInvalidSizeForCategory),
 
             CategorySizeType.Shoes => NormalizeShoeSize(normalizedSize),
@@ -715,32 +686,12 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
     {
         var normalizedSize = size.ToUpperInvariant();
 
-        if (!ClothingSizes.Contains(normalizedSize))
+        if (!ProductVariantSizeConsts.IsValidClothingSize(normalizedSize))
         {
             throw new BusinessException(StoreManagementDomainErrorCodes.ProductVariantInvalidSizeForCategory);
         }
 
         return normalizedSize;
-    }
-
-    private static int GetSizeSortOrder(string? size)
-    {
-        if (string.IsNullOrWhiteSpace(size))
-        {
-            return int.MaxValue;
-        }
-
-        if (ClothingSizeSortOrder.TryGetValue(size, out var clothingOrder))
-        {
-            return clothingOrder;
-        }
-
-        if (int.TryParse(size, out var numericSize))
-        {
-            return 1000 + numericSize;
-        }
-
-        return int.MaxValue - 1;
     }
 
     private static string NormalizeText(string? value)

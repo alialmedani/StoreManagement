@@ -104,8 +104,6 @@ public class ProductAppService : ApplicationService, IProductAppService
                     },
                     Variants = product.Variants
                         .Where(variant => !variant.IsDeleted)
-                        .OrderBy(variant => variant.Color)
-                        .ThenBy(variant => variant.Size)
                         .Select(variant => new ProductVariantSummaryDto
                         {
                             Id = variant.Id,
@@ -129,6 +127,12 @@ public class ProductAppService : ApplicationService, IProductAppService
         {
             throw new EntityNotFoundException(typeof(Product), id);
         }
+
+        product.Variants = product.Variants
+            .OrderBy(variant => variant.Color)
+            .ThenBy(variant => ProductVariantSizeConsts.GetSortOrder(variant.Size))
+            .ThenBy(variant => variant.Size)
+            .ToList();
 
         return product;
     }
