@@ -203,7 +203,9 @@ public class StoreManagementDbContext :
 
             b.Property(variant => variant.StockQuantity)
                 .IsRequired();
-
+            b.Property(variant => variant.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
             b.HasOne(variant => variant.Product)
                 .WithMany(product => product.Variants)
                 .HasForeignKey(variant => variant.ProductId)

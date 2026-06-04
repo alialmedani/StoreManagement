@@ -11,6 +11,12 @@
     "StoreManagement:CategoryTextTooLong": "Category text is too long.",
     "StoreManagement:CategoryNotDeleted": "Category does not exist or is not deleted.",
     "StoreManagement:CategoryHasProducts": "Cannot delete category because it is already used by products.",
-    "StoreManagement:CategorySizeTypeCannotBeChanged": "Cannot change category size type because this category is already used by products."
+    "StoreManagement:CategorySizeTypeCannotBeChanged": "Cannot change category size type because this category is already used by products.",
+    "StoreManagement:ProductVariantAlreadyExists": "Product variant already exists.",
+    "StoreManagement:ProductVariantNotFound": "Product variant was not found.",
+    "StoreManagement:ProductVariantProductNotFound": "Product does not exist.",
+    "StoreManagement:ProductVariantInvalidSizeForCategory": "Variant size is not valid for this product category.",
+    "StoreManagement:ProductVariantHasStock": "Cannot delete product variant because it has stock.",
+    "StoreManagement:ProductVariantCannotRestoreDuplicate": "Cannot restore product variant because another active variant with the same color and size already exists."
   }
 }

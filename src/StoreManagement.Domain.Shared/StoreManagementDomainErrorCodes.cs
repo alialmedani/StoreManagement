@@ -19,4 +19,11 @@ public static class StoreManagementDomainErrorCodes
     public const string ProductVariantStockCannotBeNegative = "StoreManagement:ProductVariantStockCannotBeNegative";
     public const string CategoryHasProducts = "StoreManagement:CategoryHasProducts";
     public const string CategorySizeTypeCannotBeChanged = "StoreManagement:CategorySizeTypeCannotBeChanged";
+    
+    public const string ProductVariantAlreadyExists = "StoreManagement:ProductVariantAlreadyExists";
+    public const string ProductVariantNotFound = "StoreManagement:ProductVariantNotFound";
+    public const string ProductVariantProductNotFound = "StoreManagement:ProductVariantProductNotFound";
+    public const string ProductVariantInvalidSizeForCategory = "StoreManagement:ProductVariantInvalidSizeForCategory";
+    public const string ProductVariantHasStock = "StoreManagement:ProductVariantHasStock";
+    public const string ProductVariantCannotRestoreDuplicate = "StoreManagement:ProductVariantCannotRestoreDuplicate";
 }

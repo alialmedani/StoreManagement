@@ -20,6 +20,8 @@ public class ProductVariant : FullAuditedEntity<Guid>
 
     public int StockQuantity { get; private set; }
 
+    public bool IsActive { get; private set; }
+
     protected ProductVariant()
     {
     }
@@ -29,12 +31,14 @@ public class ProductVariant : FullAuditedEntity<Guid>
         Guid productId,
         string color,
         string size,
-        int stockQuantity)
+        int stockQuantity,
+        bool isActive = true)
         : base(id)
     {
         ProductId = productId;
         SetColorAndSize(color, size);
         SetStockQuantity(stockQuantity);
+        IsActive = isActive;
     }
 
     public void SetColorAndSize(string color, string size)
@@ -83,6 +87,21 @@ public class ProductVariant : FullAuditedEntity<Guid>
         }
 
         StockQuantity -= quantity;
+    }
+
+    public void Activate()
+    {
+        IsActive = true;
+    }
+
+    public void Deactivate()
+    {
+        IsActive = false;
+    }
+
+    public void SetActive(bool isActive)
+    {
+        IsActive = isActive;
     }
 
     public void Restore()

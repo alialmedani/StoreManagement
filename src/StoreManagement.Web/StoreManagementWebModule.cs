@@ -183,6 +183,13 @@ public class StoreManagementWebModule : AbpModule
             options.Map(StoreManagementDomainErrorCodes.ProductCategoryNotFound, HttpStatusCode.BadRequest);
             options.Map(StoreManagementDomainErrorCodes.ProductPriceInvalid, HttpStatusCode.BadRequest);
             options.Map(StoreManagementDomainErrorCodes.ProductCategoryCannotBeChanged, HttpStatusCode.Conflict);
+            options.Map(StoreManagementDomainErrorCodes.ProductVariantAlreadyExists, HttpStatusCode.BadRequest);
+            options.Map(StoreManagementDomainErrorCodes.ProductVariantNotFound, HttpStatusCode.BadRequest);
+            options.Map(StoreManagementDomainErrorCodes.ProductVariantProductNotFound, HttpStatusCode.BadRequest);
+            options.Map(StoreManagementDomainErrorCodes.ProductVariantInvalidSizeForCategory, HttpStatusCode.BadRequest);
+
+            options.Map(StoreManagementDomainErrorCodes.ProductVariantHasStock, HttpStatusCode.Conflict);
+            options.Map(StoreManagementDomainErrorCodes.ProductVariantCannotRestoreDuplicate, HttpStatusCode.Conflict);
         });
     }
 
