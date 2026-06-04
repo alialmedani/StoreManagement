@@ -17,6 +17,7 @@
     "StoreManagement:ProductVariantProductNotFound": "Product does not exist.",
     "StoreManagement:ProductVariantInvalidSizeForCategory": "Variant size is not valid for this product category.",
     "StoreManagement:ProductVariantHasStock": "Cannot delete product variant because it has stock.",
-    "StoreManagement:ProductVariantCannotRestoreDuplicate": "Cannot restore product variant because another active variant with the same color and size already exists."
+    "StoreManagement:ProductVariantCannotRestoreDuplicate": "Cannot restore product variant because another active variant with the same color and size already exists.",
+    "StoreManagement:ProductHasVariants": "Cannot delete product because it has variants. Deactivate it instead."
   }
 }

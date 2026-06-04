@@ -32,6 +32,20 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
         "4XL"
     };
 
+    private static readonly Dictionary<string, int> ClothingSizeSortOrder = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["XS"] = 10,
+        ["S"] = 20,
+        ["M"] = 30,
+        ["L"] = 40,
+        ["XL"] = 50,
+        ["XXL"] = 60,
+        ["XXXL"] = 70,
+        ["2XL"] = 80,
+        ["3XL"] = 90,
+        ["4XL"] = 100
+    };
+
     private readonly IRepository<ProductVariant, Guid> _productVariantRepository;
     private readonly IRepository<Product, Guid> _productRepository;
     private readonly IDataFilter<ISoftDelete> _softDeleteFilter;
@@ -128,6 +142,89 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
         }
 
         return variant;
+    }
+
+    public async Task<ProductVariantOptionsDto> GetOptionsAsync(Guid productId)
+    {
+        var productInfo = await GetProductInfoAsync(productId);
+
+        var query = await _productVariantRepository.GetQueryableAsync();
+
+        var variants = await AsyncExecuter.ToListAsync(
+            query
+                .Where(variant =>
+                    variant.ProductId == productId &&
+                    variant.IsActive &&
+                    variant.Product.IsActive &&
+                    variant.Product.Category.IsActive)
+                .OrderBy(variant => variant.Color)
+                .ThenBy(variant => variant.Size)
+                .Select(variant => new ProductVariantOptionItemDto
+                {
+                    Id = variant.Id,
+                    Color = variant.Color == ProductVariantConsts.NoColor
+                        ? null
+                        : variant.Color,
+                    Size = variant.Size == ProductVariantConsts.NoSize || variant.Size == OneSizeLabel
+                        ? null
+                        : variant.Size,
+                    StockQuantity = variant.StockQuantity,
+                    IsActive = variant.IsActive,
+                    IsAvailable = variant.IsActive && variant.StockQuantity > 0
+                })
+        );
+
+        variants = variants
+            .OrderBy(variant => variant.Color ?? string.Empty)
+            .ThenBy(variant => GetSizeSortOrder(variant.Size))
+            .ThenBy(variant => variant.Size ?? string.Empty)
+            .ToList();
+
+        var availableVariants = variants
+            .Where(variant => variant.IsAvailable)
+            .ToList();
+
+        var colors = availableVariants
+            .Where(variant => !string.IsNullOrWhiteSpace(variant.Color))
+            .Select(variant => variant.Color!)
+            .Distinct()
+            .OrderBy(color => color)
+            .ToList();
+
+        var sizes = availableVariants
+            .Where(variant => !string.IsNullOrWhiteSpace(variant.Size))
+            .Select(variant => variant.Size!)
+            .Distinct()
+            .OrderBy(GetSizeSortOrder)
+            .ThenBy(size => size)
+            .ToList();
+
+        var hasColorOptions = colors.Count > 0;
+        var hasSizeOptions = sizes.Count > 0;
+
+        var requiresVariantSelection =
+            hasColorOptions ||
+            hasSizeOptions ||
+            availableVariants.Count > 1;
+
+        Guid? defaultVariantId = null;
+
+        if (!requiresVariantSelection && availableVariants.Count == 1)
+        {
+            defaultVariantId = availableVariants[0].Id;
+        }
+
+        return new ProductVariantOptionsDto
+        {
+            ProductId = productInfo.ProductId,
+            RequiresVariantSelection = requiresVariantSelection,
+            DefaultVariantId = defaultVariantId,
+            HasColorOptions = hasColorOptions,
+            HasSizeOptions = hasSizeOptions,
+            Colors = colors,
+            Sizes = sizes,
+            Variants = variants
+        };
     }
 
     public async Task<ProductVariantDto> CreateAsync(CreateProductVariantDto input)
@@ -327,84 +424,6 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
         }
     }
 
-    public async Task<List<string>> GetAvailableColorsAsync(Guid productId)
-    {
-        var query = await _productVariantRepository.GetQueryableAsync();
-
-        return await AsyncExecuter.ToListAsync(
-            query
-                .Where(variant =>
-                    variant.ProductId == productId &&
-                    variant.IsActive &&
-                    variant.StockQuantity > 0 &&
-                    variant.Product.IsActive &&
-                    variant.Product.Category.IsActive)
-                .Select(variant => variant.Color)
-                .Distinct()
-                .OrderBy(color => color)
-        );
-    }
-
-    public async Task<List<string>> GetAvailableSizesAsync(Guid productId)
-    {
-        var query = await _productVariantRepository.GetQueryableAsync();
-
-        return await AsyncExecuter.ToListAsync(
-            query
-                .Where(variant =>
-                    variant.ProductId == productId &&
-                    variant.IsActive &&
-                    variant.StockQuantity > 0 &&
-                    variant.Product.IsActive &&
-                    variant.Product.Category.IsActive)
-                .Select(variant => variant.Size)
-                .Distinct()
-                .OrderBy(size => size)
-        );
-    }
-
-    public async Task<List<string>> GetAvailableColorsBySizeAsync(Guid productId, string size)
-    {
-        var normalizedSize = NormalizeKey(size);
-
-        var query = await _productVariantRepository.GetQueryableAsync();
-
-        return await AsyncExecuter.ToListAsync(
-            query
-                .Where(variant =>
-                    variant.ProductId == productId &&
-                    variant.NormalizedSize == normalizedSize &&
-                    variant.IsActive &&
-                    variant.StockQuantity > 0 &&
-                    variant.Product.IsActive &&
-                    variant.Product.Category.IsActive)
-                .Select(variant => variant.Color)
-                .Distinct()
-                .OrderBy(color => color)
-        );
-    }
-
-    public async Task<List<string>> GetAvailableSizesByColorAsync(Guid productId, string color)
-    {
-        var normalizedColor = NormalizeKey(NormalizeColor(color));
-
-        var query = await _productVariantRepository.GetQueryableAsync();
-
-        return await AsyncExecuter.ToListAsync(
-            query
-                .Where(variant =>
-                    variant.ProductId == productId &&
-                    variant.NormalizedColor == normalizedColor &&
-                    variant.IsActive &&
-                    variant.StockQuantity > 0 &&
-                    variant.Product.IsActive &&
-                    variant.Product.Category.IsActive)
-                .Select(variant => variant.Size)
-                .Distinct()
-                .OrderBy(size => size)
-        );
-    }
-
     private async Task<ProductVariantProductInfo> GetProductInfoAsync(Guid productId)
     {
         if (productId == Guid.Empty)
@@ -441,13 +460,17 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         var query = await _productVariantRepository.GetQueryableAsync();
 
-        return await AsyncExecuter.ToListAsync(
+        var items = await AsyncExecuter.ToListAsync(
             query
                 .Where(variant => ids.Contains(variant.Id))
-                .OrderBy(variant => variant.Color)
-                .ThenBy(variant => variant.Size)
                 .Select(MapToDtoExpression())
         );
+
+        return items
+            .OrderBy(item => item.Color)
+            .ThenBy(item => GetSizeSortOrder(item.Size))
+            .ThenBy(item => item.Size)
+            .ToList();
     }
 
     private async Task EnsureVariantIsUniqueAsync(
@@ -698,6 +721,26 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
         }
 
         return normalizedSize;
+    }
+
+    private static int GetSizeSortOrder(string? size)
+    {
+        if (string.IsNullOrWhiteSpace(size))
+        {
+            return int.MaxValue;
+        }
+
+        if (ClothingSizeSortOrder.TryGetValue(size, out var clothingOrder))
+        {
+            return clothingOrder;
+        }
+
+        if (int.TryParse(size, out var numericSize))
+        {
+            return 1000 + numericSize;
+        }
+
+        return int.MaxValue - 1;
     }
 
     private static string NormalizeText(string? value)

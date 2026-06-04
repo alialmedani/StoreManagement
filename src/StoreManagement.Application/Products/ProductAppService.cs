@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using StoreManagement.Categories;
 using StoreManagement.Common;
@@ -44,34 +45,7 @@ public class ProductAppService : ApplicationService, IProductAppService
             query
                 .Skip(input.SkipCount)
                 .Take(input.MaxResultCount)
-                .Select(product => new ProductDto
-                {
-                    Id = product.Id,
-                    Name = product.Name,
-                    Description = product.Description,
-                    Price = product.Price,
-                    TotalStockQuantity = product.Variants
-                        .Where(variant => !variant.IsDeleted)
-                        .Sum(variant => variant.StockQuantity),
-                    IsActive = product.IsActive,
-                    Category = new EntityLookupDto
-                    {
-                        Id = product.CategoryId,
-                        Name = product.Category.Name
-                    },
-                    TargetAudience = new LookupDto
-                    {
-                        Id = (int)product.TargetAudience,
-                        Name = product.TargetAudience.ToString()
-                    },
-                    CreationTime = product.CreationTime,
-                    CreatorId = product.CreatorId,
-                    LastModificationTime = product.LastModificationTime,
-                    LastModifierId = product.LastModifierId,
-                    IsDeleted = product.IsDeleted,
-                    DeleterId = product.DeleterId,
-                    DeletionTime = product.DeletionTime
-                })
+                .Select(MapToProductDtoExpression())
         );
 
         return new PagedResultDto<ProductDto>(totalCount, items);
@@ -94,34 +68,7 @@ public class ProductAppService : ApplicationService, IProductAppService
                 query
                     .Skip(input.SkipCount)
                     .Take(input.MaxResultCount)
-                    .Select(product => new ProductDto
-                    {
-                        Id = product.Id,
-                        Name = product.Name,
-                        Description = product.Description,
-                        Price = product.Price,
-                        TotalStockQuantity = product.Variants
-                            .Where(variant => !variant.IsDeleted)
-                            .Sum(variant => variant.StockQuantity),
-                        IsActive = product.IsActive,
-                        Category = new EntityLookupDto
-                        {
-                            Id = product.CategoryId,
-                            Name = product.Category.Name
-                        },
-                        TargetAudience = new LookupDto
-                        {
-                            Id = (int)product.TargetAudience,
-                            Name = product.TargetAudience.ToString()
-                        },
-                        CreationTime = product.CreationTime,
-                        CreatorId = product.CreatorId,
-                        LastModificationTime = product.LastModificationTime,
-                        LastModifierId = product.LastModifierId,
-                        IsDeleted = product.IsDeleted,
-                        DeleterId = product.DeleterId,
-                        DeletionTime = product.DeletionTime
-                    })
+                    .Select(MapToProductDtoExpression())
             );
 
             return new PagedResultDto<ProductDto>(totalCount, items);
@@ -155,18 +102,6 @@ public class ProductAppService : ApplicationService, IProductAppService
                         Id = (int)product.TargetAudience,
                         Name = product.TargetAudience.ToString()
                     },
-                    AvailableColors = product.Variants
-                        .Where(variant => !variant.IsDeleted && variant.StockQuantity > 0)
-                        .Select(variant => variant.Color)
-                        .Distinct()
-                        .OrderBy(color => color)
-                        .ToList(),
-                    AvailableSizes = product.Variants
-                        .Where(variant => !variant.IsDeleted && variant.StockQuantity > 0)
-                        .Select(variant => variant.Size)
-                        .Distinct()
-                        .OrderBy(size => size)
-                        .ToList(),
                     Variants = product.Variants
                         .Where(variant => !variant.IsDeleted)
                         .OrderBy(variant => variant.Color)
@@ -176,7 +111,8 @@ public class ProductAppService : ApplicationService, IProductAppService
                             Id = variant.Id,
                             Color = variant.Color,
                             Size = variant.Size,
-                            StockQuantity = variant.StockQuantity
+                            StockQuantity = variant.StockQuantity,
+                            IsActive = variant.IsActive
                         })
                         .ToList(),
                     CreationTime = product.CreationTime,
@@ -265,6 +201,18 @@ public class ProductAppService : ApplicationService, IProductAppService
     {
         var product = await _productRepository.GetAsync(id);
 
+        using (_softDeleteFilter.Disable())
+        {
+            var hasVariants = await _productVariantRepository.AnyAsync(
+                variant => variant.ProductId == product.Id
+            );
+
+            if (hasVariants)
+            {
+                throw new BusinessException(StoreManagementDomainErrorCodes.ProductHasVariants);
+            }
+        }
+
         await _productRepository.DeleteAsync(product, autoSave: true);
     }
 
@@ -307,34 +255,7 @@ public class ProductAppService : ApplicationService, IProductAppService
         var product = await AsyncExecuter.FirstOrDefaultAsync(
             query
                 .Where(product => product.Id == id)
-                .Select(product => new ProductDto
-                {
-                    Id = product.Id,
-                    Name = product.Name,
-                    Description = product.Description,
-                    Price = product.Price,
-                    TotalStockQuantity = product.Variants
-                        .Where(variant => !variant.IsDeleted)
-                        .Sum(variant => variant.StockQuantity),
-                    IsActive = product.IsActive,
-                    Category = new EntityLookupDto
-                    {
-                        Id = product.CategoryId,
-                        Name = product.Category.Name
-                    },
-                    TargetAudience = new LookupDto
-                    {
-                        Id = (int)product.TargetAudience,
-                        Name = product.TargetAudience.ToString()
-                    },
-                    CreationTime = product.CreationTime,
-                    CreatorId = product.CreatorId,
-                    LastModificationTime = product.LastModificationTime,
-                    LastModifierId = product.LastModifierId,
-                    IsDeleted = product.IsDeleted,
-                    DeleterId = product.DeleterId,
-                    DeletionTime = product.DeletionTime
-                })
+                .Select(MapToProductDtoExpression())
         );
 
         if (product == null)
@@ -353,7 +274,8 @@ public class ProductAppService : ApplicationService, IProductAppService
         }
 
         var categoryExists = await _categoryRepository.AnyAsync(category =>
-            category.Id == categoryId);
+            category.Id == categoryId &&
+            !category.IsDeleted);
 
         if (!categoryExists)
         {
@@ -367,6 +289,7 @@ public class ProductAppService : ApplicationService, IProductAppService
         Guid? excludedProductId = null)
     {
         var duplicateExists = await _productRepository.AnyAsync(product =>
+            !product.IsDeleted &&
             product.CategoryId == categoryId &&
             product.NormalizedName == normalizedName &&
             (!excludedProductId.HasValue || product.Id != excludedProductId.Value));
@@ -396,7 +319,7 @@ public class ProductAppService : ApplicationService, IProductAppService
     {
         if (string.IsNullOrWhiteSpace(sorting))
         {
-            return query.OrderBy(product => product.CreationTime);
+            return query.OrderByDescending(product => product.CreationTime);
         }
 
         return sorting.Trim().ToLowerInvariant() switch
@@ -407,13 +330,45 @@ public class ProductAppService : ApplicationService, IProductAppService
             "price" or "price asc" => query.OrderBy(product => product.Price),
             "price desc" => query.OrderByDescending(product => product.Price),
 
-            "creationtime" or "creationtime asc" => query.OrderBy(product => product.CreationTime),
-            "creationtime desc" => query.OrderByDescending(product => product.CreationTime),
+            "creationtime" or "creationtime desc" => query.OrderByDescending(product => product.CreationTime),
+            "creationtime asc" => query.OrderBy(product => product.CreationTime),
 
             "isactive" or "isactive asc" => query.OrderBy(product => product.IsActive),
             "isactive desc" => query.OrderByDescending(product => product.IsActive),
 
-            _ => query.OrderBy(product => product.CreationTime)
+            _ => query.OrderByDescending(product => product.CreationTime)
+        };
+    }
+
+    private static Expression<Func<Product, ProductDto>> MapToProductDtoExpression()
+    {
+        return product => new ProductDto
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Description = product.Description,
+            Price = product.Price,
+            TotalStockQuantity = product.Variants
+                .Where(variant => !variant.IsDeleted)
+                .Sum(variant => variant.StockQuantity),
+            IsActive = product.IsActive,
+            Category = new EntityLookupDto
+            {
+                Id = product.CategoryId,
+                Name = product.Category.Name
+            },
+            TargetAudience = new LookupDto
+            {
+                Id = (int)product.TargetAudience,
+                Name = product.TargetAudience.ToString()
+            },
+            CreationTime = product.CreationTime,
+            CreatorId = product.CreatorId,
+            LastModificationTime = product.LastModificationTime,
+            LastModifierId = product.LastModifierId,
+            IsDeleted = product.IsDeleted,
+            DeleterId = product.DeleterId,
+            DeletionTime = product.DeletionTime
         };
     }
 

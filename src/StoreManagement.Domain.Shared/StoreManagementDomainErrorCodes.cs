@@ -26,4 +26,5 @@ public static class StoreManagementDomainErrorCodes
     public const string ProductVariantInvalidSizeForCategory = "StoreManagement:ProductVariantInvalidSizeForCategory";
     public const string ProductVariantHasStock = "StoreManagement:ProductVariantHasStock";
     public const string ProductVariantCannotRestoreDuplicate = "StoreManagement:ProductVariantCannotRestoreDuplicate";
+    public const string ProductHasVariants = "StoreManagement:ProductHasVariants";
 }

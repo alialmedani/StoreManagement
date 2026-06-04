@@ -190,6 +190,8 @@ public class StoreManagementWebModule : AbpModule
 
             options.Map(StoreManagementDomainErrorCodes.ProductVariantHasStock, HttpStatusCode.Conflict);
             options.Map(StoreManagementDomainErrorCodes.ProductVariantCannotRestoreDuplicate, HttpStatusCode.Conflict);
+            
+            options.Map(StoreManagementDomainErrorCodes.ProductHasVariants, HttpStatusCode.Conflict);
         });
     }
 

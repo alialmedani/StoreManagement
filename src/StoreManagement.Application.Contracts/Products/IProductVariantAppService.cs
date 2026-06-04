@@ -11,11 +11,16 @@ public interface IProductVariantAppService : IApplicationService
 {
     Task<PagedResultDto<ProductVariantDto>> GetListAsync(StoreManagementPagedAndSortedResultRequestDto input);
 
-    Task<PagedResultDto<ProductVariantDto>> GetByProductAsync(Guid productId, StoreManagementPagedAndSortedResultRequestDto input);
+    Task<PagedResultDto<ProductVariantDto>> GetByProductAsync(
+        Guid productId,
+        StoreManagementPagedAndSortedResultRequestDto input
+    );
 
     Task<PagedResultDto<ProductVariantDto>> GetDeletedListAsync(StoreManagementPagedAndSortedResultRequestDto input);
 
     Task<ProductVariantDto> GetAsync(Guid id);
+
+    Task<ProductVariantOptionsDto> GetOptionsAsync(Guid productId);
 
     Task<ProductVariantDto> CreateAsync(CreateProductVariantDto input);
 
@@ -28,12 +33,4 @@ public interface IProductVariantAppService : IApplicationService
     Task DeleteAsync(Guid id);
 
     Task RestoreAsync(Guid id);
-
-    Task<List<string>> GetAvailableColorsAsync(Guid productId);
-
-    Task<List<string>> GetAvailableSizesAsync(Guid productId);
-
-    Task<List<string>> GetAvailableColorsBySizeAsync(Guid productId, string size);
-
-    Task<List<string>> GetAvailableSizesByColorAsync(Guid productId, string color);
 }
