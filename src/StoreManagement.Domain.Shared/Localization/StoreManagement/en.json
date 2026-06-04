@@ -22,6 +22,9 @@
     "StoreManagement:InventoryProductVariantNotFound": "Product variant does not exist.",
     "StoreManagement:InventoryQuantityChangeCannotBeZero": "Quantity change cannot be zero.",
     "StoreManagement:InventoryStockCannotBeNegative": "Stock cannot be negative.",
-    "StoreManagement:InventoryNoteTooLong": "Inventory note is too long."
+    "StoreManagement:InventoryNoteTooLong": "Inventory note is too long.",
+    "StoreManagement:ProductVariantHasMovements": "Cannot delete product variant because it has stock movements. Deactivate it instead.",
+    "StoreManagement:InventoryInvalidMovementSource": "Inventory movement source is invalid.",
+    "StoreManagement:InventoryManualMovementTypeNotAllowed": "This inventory movement type cannot be created manually."
   }
 }

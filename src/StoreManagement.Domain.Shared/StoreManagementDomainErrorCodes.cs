@@ -32,4 +32,7 @@ public static class StoreManagementDomainErrorCodes
     public const string InventoryQuantityChangeCannotBeZero = "StoreManagement:InventoryQuantityChangeCannotBeZero";
     public const string InventoryStockCannotBeNegative = "StoreManagement:InventoryStockCannotBeNegative";
     public const string InventoryNoteTooLong = "StoreManagement:InventoryNoteTooLong";
+    public const string ProductVariantHasMovements = "StoreManagement:ProductVariantHasMovements";
+    public const string InventoryInvalidMovementSource = "StoreManagement:InventoryInvalidMovementSource";
+    public const string InventoryManualMovementTypeNotAllowed = "StoreManagement:InventoryManualMovementTypeNotAllowed";
 }

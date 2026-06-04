@@ -8,4 +8,8 @@ public class StockMovementPagedRequestDto : StoreManagementPagedAndSortedResultR
     public Guid? ProductVariantId { get; set; }
 
     public StockMovementType? MovementType { get; set; }
+
+    public StockMovementSourceType? SourceType { get; set; }
+
+    public Guid? ReferenceId { get; set; }
 }

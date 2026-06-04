@@ -19,6 +19,10 @@ public class StockMovement : FullAuditedEntity<Guid>
 
     public int NewQuantity { get; private set; }
 
+    public StockMovementSourceType SourceType { get; private set; }
+
+    public Guid? ReferenceId { get; private set; }
+
     public string? Note { get; private set; }
 
     protected StockMovement()
@@ -32,6 +36,8 @@ public class StockMovement : FullAuditedEntity<Guid>
         int quantityChange,
         int oldQuantity,
         int newQuantity,
+        StockMovementSourceType sourceType,
+        Guid? referenceId = null,
         string? note = null)
         : base(id)
     {
@@ -42,7 +48,17 @@ public class StockMovement : FullAuditedEntity<Guid>
 
         if (!Enum.IsDefined(typeof(StockMovementType), movementType))
         {
-            throw new BusinessException(StoreManagementDomainErrorCodes.InventoryProductVariantNotFound);
+            throw new BusinessException(StoreManagementDomainErrorCodes.InventoryQuantityChangeCannotBeZero);
+        }
+
+        if (!Enum.IsDefined(typeof(StockMovementSourceType), sourceType))
+        {
+            throw new BusinessException(StoreManagementDomainErrorCodes.InventoryInvalidMovementSource);
+        }
+
+        if (sourceType != StockMovementSourceType.Manual && !referenceId.HasValue)
+        {
+            throw new BusinessException(StoreManagementDomainErrorCodes.InventoryInvalidMovementSource);
         }
 
         if (quantityChange == 0)
@@ -65,6 +81,8 @@ public class StockMovement : FullAuditedEntity<Guid>
         QuantityChange = quantityChange;
         OldQuantity = oldQuantity;
         NewQuantity = newQuantity;
+        SourceType = sourceType;
+        ReferenceId = referenceId;
         SetNote(note);
     }
 

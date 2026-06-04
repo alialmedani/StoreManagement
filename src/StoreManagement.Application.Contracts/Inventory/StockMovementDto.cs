@@ -22,5 +22,9 @@ public class StockMovementDto : FullAuditedEntityDto<Guid>
 
     public int NewQuantity { get; set; }
 
+    public LookupDto SourceType { get; set; } = new();
+
+    public Guid? ReferenceId { get; set; }
+
     public string? Note { get; set; }
 }

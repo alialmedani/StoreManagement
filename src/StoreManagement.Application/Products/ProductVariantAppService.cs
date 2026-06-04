@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using StoreManagement.Categories;
 using StoreManagement.Common;
+using StoreManagement.Inventory;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
@@ -18,15 +19,18 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 {
     private readonly IRepository<ProductVariant, Guid> _productVariantRepository;
     private readonly IRepository<Product, Guid> _productRepository;
+    private readonly InventoryManager _inventoryManager;
     private readonly IDataFilter<ISoftDelete> _softDeleteFilter;
 
     public ProductVariantAppService(
         IRepository<ProductVariant, Guid> productVariantRepository,
         IRepository<Product, Guid> productRepository,
+        InventoryManager inventoryManager,
         IDataFilter<ISoftDelete> softDeleteFilter)
     {
         _productVariantRepository = productVariantRepository;
         _productRepository = productRepository;
+        _inventoryManager = inventoryManager;
         _softDeleteFilter = softDeleteFilter;
     }
 
@@ -222,6 +226,8 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         await _productVariantRepository.InsertAsync(variant, autoSave: true);
 
+        await CreateOpeningStockMovementIfNeededAsync(variant);
+
         return await GetAsync(variant.Id);
     }
 
@@ -262,6 +268,11 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
             .ToList();
 
         await _productVariantRepository.InsertManyAsync(variants, autoSave: true);
+
+        foreach (var variant in variants)
+        {
+            await CreateOpeningStockMovementIfNeededAsync(variant);
+        }
 
         return await GetByIdsAsync(variants.Select(variant => variant.Id).ToList());
     }
@@ -318,6 +329,11 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         await _productVariantRepository.InsertManyAsync(variants, autoSave: true);
 
+        foreach (var variant in variants)
+        {
+            await CreateOpeningStockMovementIfNeededAsync(variant);
+        }
+
         return await GetByIdsAsync(variants.Select(variant => variant.Id).ToList());
     }
 
@@ -352,6 +368,16 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
         if (variant.StockQuantity > 0)
         {
             throw new BusinessException(StoreManagementDomainErrorCodes.ProductVariantHasStock);
+        }
+
+        using (_softDeleteFilter.Disable())
+        {
+            var hasMovements = await _inventoryManager.HasMovementsAsync(variant.Id);
+
+            if (hasMovements)
+            {
+                throw new BusinessException(StoreManagementDomainErrorCodes.ProductVariantHasMovements);
+            }
         }
 
         await _productVariantRepository.DeleteAsync(variant, autoSave: true);
@@ -485,6 +511,11 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
         );
 
         return existingKeys.ToHashSet();
+    }
+
+    private async Task CreateOpeningStockMovementIfNeededAsync(ProductVariant variant)
+    {
+        await _inventoryManager.CreateOpeningStockAsync(variant);
     }
 
     private static void EnsureRequestHasNoDuplicates(List<NormalizedVariantItem> items)

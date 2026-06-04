@@ -254,6 +254,12 @@ public class StoreManagementDbContext :
             b.Property(movement => movement.NewQuantity)
                 .IsRequired();
 
+            b.Property(movement => movement.SourceType)
+                .IsRequired()
+                .HasDefaultValue(StockMovementSourceType.Manual);
+
+            b.Property(movement => movement.ReferenceId);
+
             b.Property(movement => movement.Note)
                 .HasMaxLength(InventoryConsts.MaxNoteLength);
 
@@ -267,6 +273,12 @@ public class StoreManagementDbContext :
 
             b.HasIndex(movement => movement.MovementType)
                 .HasDatabaseName("IX_StoreManagement_StockMovements_MovementType");
+
+            b.HasIndex(movement => movement.SourceType)
+                .HasDatabaseName("IX_StoreManagement_StockMovements_SourceType");
+
+            b.HasIndex(movement => movement.ReferenceId)
+                .HasDatabaseName("IX_StoreManagement_StockMovements_ReferenceId");
 
             b.HasIndex(movement => movement.CreationTime)
                 .HasDatabaseName("IX_StoreManagement_StockMovements_CreationTime");

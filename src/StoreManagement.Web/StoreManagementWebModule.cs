@@ -183,22 +183,25 @@ public class StoreManagementWebModule : AbpModule
             options.Map(StoreManagementDomainErrorCodes.ProductCategoryNotFound, HttpStatusCode.BadRequest);
             options.Map(StoreManagementDomainErrorCodes.ProductPriceInvalid, HttpStatusCode.BadRequest);
             options.Map(StoreManagementDomainErrorCodes.ProductCategoryCannotBeChanged, HttpStatusCode.Conflict);
+            options.Map(StoreManagementDomainErrorCodes.ProductHasVariants, HttpStatusCode.Conflict);
+
             options.Map(StoreManagementDomainErrorCodes.ProductVariantAlreadyExists, HttpStatusCode.BadRequest);
             options.Map(StoreManagementDomainErrorCodes.ProductVariantNotFound, HttpStatusCode.BadRequest);
             options.Map(StoreManagementDomainErrorCodes.ProductVariantProductNotFound, HttpStatusCode.BadRequest);
             options.Map(StoreManagementDomainErrorCodes.ProductVariantInvalidSizeForCategory, HttpStatusCode.BadRequest);
 
             options.Map(StoreManagementDomainErrorCodes.ProductVariantHasStock, HttpStatusCode.Conflict);
+            options.Map(StoreManagementDomainErrorCodes.ProductVariantHasMovements, HttpStatusCode.Conflict);
             options.Map(StoreManagementDomainErrorCodes.ProductVariantCannotRestoreDuplicate, HttpStatusCode.Conflict);
-            
-            options.Map(StoreManagementDomainErrorCodes.ProductHasVariants, HttpStatusCode.Conflict);
-            
+
             options.Map(StoreManagementDomainErrorCodes.InventoryProductVariantNotFound, HttpStatusCode.BadRequest);
             options.Map(StoreManagementDomainErrorCodes.InventoryQuantityChangeCannotBeZero, HttpStatusCode.BadRequest);
             options.Map(StoreManagementDomainErrorCodes.InventoryNoteTooLong, HttpStatusCode.BadRequest);
 
             options.Map(StoreManagementDomainErrorCodes.InventoryStockCannotBeNegative, HttpStatusCode.Conflict);
             
+            options.Map(StoreManagementDomainErrorCodes.InventoryInvalidMovementSource, HttpStatusCode.BadRequest);
+            options.Map(StoreManagementDomainErrorCodes.InventoryManualMovementTypeNotAllowed, HttpStatusCode.BadRequest);
         });
     }
 

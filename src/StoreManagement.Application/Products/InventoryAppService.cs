@@ -3,8 +3,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using StoreManagement.Common;
-using StoreManagement.Products;
-using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Entities;
@@ -14,15 +12,15 @@ namespace StoreManagement.Inventory;
 
 public class InventoryAppService : ApplicationService, IInventoryAppService
 {
-    private readonly IRepository<ProductVariant, Guid> _productVariantRepository;
     private readonly IRepository<StockMovement, Guid> _stockMovementRepository;
+    private readonly InventoryManager _inventoryManager;
 
     public InventoryAppService(
-        IRepository<ProductVariant, Guid> productVariantRepository,
-        IRepository<StockMovement, Guid> stockMovementRepository)
+        IRepository<StockMovement, Guid> stockMovementRepository,
+        InventoryManager inventoryManager)
     {
-        _productVariantRepository = productVariantRepository;
         _stockMovementRepository = stockMovementRepository;
+        _inventoryManager = inventoryManager;
     }
 
     public async Task<PagedResultDto<StockMovementDto>> GetListAsync(StockMovementPagedRequestDto input)
@@ -37,6 +35,16 @@ public class InventoryAppService : ApplicationService, IInventoryAppService
         if (input.MovementType.HasValue)
         {
             query = query.Where(movement => movement.MovementType == input.MovementType.Value);
+        }
+
+        if (input.SourceType.HasValue)
+        {
+            query = query.Where(movement => movement.SourceType == input.SourceType.Value);
+        }
+
+        if (input.ReferenceId.HasValue)
+        {
+            query = query.Where(movement => movement.ReferenceId == input.ReferenceId.Value);
         }
 
         query = ApplyFilter(query, input.Filter);
@@ -74,91 +82,15 @@ public class InventoryAppService : ApplicationService, IInventoryAppService
 
     public async Task<StockMovementDto> AdjustStockAsync(AdjustStockDto input)
     {
-        var variant = await _productVariantRepository.FindAsync(input.ProductVariantId);
-
-        if (variant == null)
-        {
-            throw new BusinessException(StoreManagementDomainErrorCodes.InventoryProductVariantNotFound);
-        }
-
-        var oldQuantity = variant.StockQuantity;
-
-        var quantityChange = CalculateQuantityChange(input, oldQuantity);
-
-        if (quantityChange == 0)
-        {
-            throw new BusinessException(StoreManagementDomainErrorCodes.InventoryQuantityChangeCannotBeZero);
-        }
-
-        var newQuantity = oldQuantity + quantityChange;
-
-        if (newQuantity < 0)
-        {
-            throw new BusinessException(StoreManagementDomainErrorCodes.InventoryStockCannotBeNegative);
-        }
-
-        variant.SetStockQuantity(newQuantity);
-
-        var movement = new StockMovement(
-            GuidGenerator.Create(),
-            variant.Id,
+        var movement = await _inventoryManager.AdjustManuallyAsync(
+            input.ProductVariantId,
             input.MovementType,
-            quantityChange,
-            oldQuantity,
-            newQuantity,
+            input.Quantity,
+            input.NewQuantity,
             input.Note
         );
 
-        await _productVariantRepository.UpdateAsync(variant, autoSave: true);
-
-        await _stockMovementRepository.InsertAsync(movement, autoSave: true);
-
         return await GetAsync(movement.Id);
-    }
-
-    private static int CalculateQuantityChange(AdjustStockDto input, int oldQuantity)
-    {
-        return input.MovementType switch
-        {
-            StockMovementType.Increase => GetRequiredPositiveQuantity(input.Quantity),
-
-            StockMovementType.Return => GetRequiredPositiveQuantity(input.Quantity),
-
-            StockMovementType.OrderCancellation => GetRequiredPositiveQuantity(input.Quantity),
-
-            StockMovementType.Decrease => -GetRequiredPositiveQuantity(input.Quantity),
-
-            StockMovementType.Sale => -GetRequiredPositiveQuantity(input.Quantity),
-
-            StockMovementType.Adjustment => CalculateAdjustmentChange(input.NewQuantity, oldQuantity),
-
-            _ => throw new BusinessException(StoreManagementDomainErrorCodes.InventoryQuantityChangeCannotBeZero)
-        };
-    }
-
-    private static int GetRequiredPositiveQuantity(int? quantity)
-    {
-        if (!quantity.HasValue || quantity.Value <= 0)
-        {
-            throw new BusinessException(StoreManagementDomainErrorCodes.InventoryQuantityChangeCannotBeZero);
-        }
-
-        return quantity.Value;
-    }
-
-    private static int CalculateAdjustmentChange(int? newQuantity, int oldQuantity)
-    {
-        if (!newQuantity.HasValue)
-        {
-            throw new BusinessException(StoreManagementDomainErrorCodes.InventoryQuantityChangeCannotBeZero);
-        }
-
-        if (newQuantity.Value < 0)
-        {
-            throw new BusinessException(StoreManagementDomainErrorCodes.InventoryStockCannotBeNegative);
-        }
-
-        return newQuantity.Value - oldQuantity;
     }
 
     private static IQueryable<StockMovement> ApplyFilter(IQueryable<StockMovement> query, string? filter)
@@ -188,6 +120,9 @@ public class InventoryAppService : ApplicationService, IInventoryAppService
         {
             "movementtype" or "movementtype asc" => query.OrderBy(movement => movement.MovementType),
             "movementtype desc" => query.OrderByDescending(movement => movement.MovementType),
+
+            "sourcetype" or "sourcetype asc" => query.OrderBy(movement => movement.SourceType),
+            "sourcetype desc" => query.OrderByDescending(movement => movement.SourceType),
 
             "quantitychange" or "quantitychange asc" => query.OrderBy(movement => movement.QuantityChange),
             "quantitychange desc" => query.OrderByDescending(movement => movement.QuantityChange),
@@ -222,6 +157,12 @@ public class InventoryAppService : ApplicationService, IInventoryAppService
             QuantityChange = movement.QuantityChange,
             OldQuantity = movement.OldQuantity,
             NewQuantity = movement.NewQuantity,
+            SourceType = new LookupDto
+            {
+                Id = (int)movement.SourceType,
+                Name = movement.SourceType.ToString()
+            },
+            ReferenceId = movement.ReferenceId,
             Note = movement.Note,
             CreationTime = movement.CreationTime,
             CreatorId = movement.CreatorId,
