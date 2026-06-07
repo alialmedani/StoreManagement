@@ -35,4 +35,19 @@ public static class StoreManagementDomainErrorCodes
     public const string ProductVariantHasMovements = "StoreManagement:ProductVariantHasMovements";
     public const string InventoryInvalidMovementSource = "StoreManagement:InventoryInvalidMovementSource";
     public const string InventoryManualMovementTypeNotAllowed = "StoreManagement:InventoryManualMovementTypeNotAllowed";
+    
+    public const string OrderNumberRequired = "StoreManagement:OrderNumberRequired";
+    public const string OrderTextTooLong = "StoreManagement:OrderTextTooLong";
+    public const string OrderItemRequired = "StoreManagement:OrderItemRequired";
+    public const string OrderQuantityInvalid = "StoreManagement:OrderQuantityInvalid";
+    public const string OrderUnitPriceInvalid = "StoreManagement:OrderUnitPriceInvalid";
+    public const string OrderCannotBeConfirmed = "StoreManagement:OrderCannotBeConfirmed";
+    public const string OrderCannotBeCancelled = "StoreManagement:OrderCannotBeCancelled";
+    public const string OrderCannotBeUpdated = "StoreManagement:OrderCannotBeUpdated";
+    public const string OrderProductVariantNotFound = "StoreManagement:OrderProductVariantNotFound";
+    public const string OrderProductVariantInactive = "StoreManagement:OrderProductVariantInactive";
+    public const string OrderInsufficientStock = "StoreManagement:OrderInsufficientStock";
+    public const string OrderCustomerNameRequired = "StoreManagement:OrderCustomerNameRequired";
+    public const string OrderCannotBeDeleted = "StoreManagement:OrderCannotBeDeleted";
+    
 }

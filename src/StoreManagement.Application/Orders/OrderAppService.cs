@@ -1,0 +1,319 @@
+using System;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
+using StoreManagement.Common;
+using Volo.Abp;
+using Volo.Abp.Application.Dtos;
+using Volo.Abp.Application.Services;
+using Volo.Abp.Domain.Entities;
+using Volo.Abp.Domain.Repositories;
+
+namespace StoreManagement.Orders;
+
+public class OrderAppService : ApplicationService, IOrderAppService
+{
+    private readonly IRepository<Order, Guid> _orderRepository;
+    private readonly OrderManager _orderManager;
+
+    public OrderAppService(
+        IRepository<Order, Guid> orderRepository,
+        OrderManager orderManager)
+    {
+        _orderRepository = orderRepository;
+        _orderManager = orderManager;
+    }
+
+    public async Task<PagedResultDto<OrderDto>> GetListAsync(OrderPagedRequestDto input)
+    {
+        var query = await _orderRepository.GetQueryableAsync();
+
+        if (input.Status.HasValue)
+        {
+            query = query.Where(order => order.Status == input.Status.Value);
+        }
+
+        query = ApplyFilter(query, input.Filter);
+        query = ApplySorting(query, input.Sorting);
+
+        var totalCount = await AsyncExecuter.CountAsync(query);
+
+        var items = await AsyncExecuter.ToListAsync(
+            query
+                .Skip(input.SkipCount)
+                .Take(input.MaxResultCount)
+                .Select(MapToDtoExpression())
+        );
+
+        return new PagedResultDto<OrderDto>(totalCount, items);
+    }
+
+    public async Task<OrderDetailsDto> GetAsync(Guid id)
+    {
+        var query = await _orderRepository.GetQueryableAsync();
+
+        var order = await AsyncExecuter.FirstOrDefaultAsync(
+            query
+                .Where(order => order.Id == id)
+                .Select(MapToDetailsDtoExpression())
+        );
+
+        if (order == null)
+        {
+            throw new EntityNotFoundException(typeof(Order), id);
+        }
+
+        return order;
+    }
+
+    public async Task<OrderDetailsDto> CreateAsync(CreateOrderDto input)
+    {
+        if (input.Items == null || input.Items.Count == 0)
+        {
+            throw new BusinessException(StoreManagementDomainErrorCodes.OrderItemRequired);
+        }
+
+        var order = await _orderManager.CreateAsync(
+            input.CustomerName,
+            input.CustomerPhone,
+            input.Note
+        );
+
+        foreach (var item in input.Items)
+        {
+            await _orderManager.AddItemAsync(
+                order,
+                item.ProductVariantId,
+                item.Quantity,
+                item.UnitPrice
+            );
+        }
+
+        await _orderRepository.InsertAsync(order, autoSave: true);
+
+        return await GetAsync(order.Id);
+    }
+
+    public async Task<OrderDetailsDto> UpdateAsync(Guid id, UpdateOrderDto input)
+    {
+        var order = await GetOrderAggregateAsync(id);
+
+        order.UpdateHeader(
+            input.CustomerName,
+            input.CustomerPhone,
+            input.Note
+        );
+
+        await _orderRepository.UpdateAsync(order, autoSave: true);
+
+        return await GetAsync(order.Id);
+    }
+
+    public async Task<OrderDetailsDto> AddItemAsync(Guid id, AddOrderItemDto input)
+    {
+        var order = await GetOrderAggregateAsync(id);
+
+        await _orderManager.AddItemAsync(
+            order,
+            input.ProductVariantId,
+            input.Quantity,
+            input.UnitPrice
+        );
+
+        await _orderRepository.UpdateAsync(order, autoSave: true);
+
+        return await GetAsync(order.Id);
+    }
+
+    public async Task<OrderDetailsDto> UpdateItemAsync(Guid id, Guid itemId, UpdateOrderItemDto input)
+    {
+        var order = await GetOrderAggregateAsync(id);
+
+        order.UpdateItem(
+            itemId,
+            input.Quantity,
+            input.UnitPrice
+        );
+
+        await _orderRepository.UpdateAsync(order, autoSave: true);
+
+        return await GetAsync(order.Id);
+    }
+
+    public async Task<OrderDetailsDto> RemoveItemAsync(Guid id, Guid itemId)
+    {
+        var order = await GetOrderAggregateAsync(id);
+
+        order.RemoveItem(itemId);
+
+        await _orderRepository.UpdateAsync(order, autoSave: true);
+
+        return await GetAsync(order.Id);
+    }
+
+    public async Task<OrderDetailsDto> ConfirmAsync(Guid id)
+    {
+        var order = await GetOrderAggregateAsync(id);
+
+        await _orderManager.ConfirmAsync(order);
+
+        await _orderRepository.UpdateAsync(order, autoSave: true);
+
+        return await GetAsync(order.Id);
+    }
+
+    public async Task<OrderDetailsDto> CancelAsync(Guid id)
+    {
+        var order = await GetOrderAggregateAsync(id);
+
+        await _orderManager.CancelAsync(order);
+
+        await _orderRepository.UpdateAsync(order, autoSave: true);
+
+        return await GetAsync(order.Id);
+    }
+
+    public async Task DeleteAsync(Guid id)
+    {
+        var order = await GetOrderAggregateAsync(id);
+
+        if (!order.IsDraft())
+        {
+            throw new BusinessException(StoreManagementDomainErrorCodes.OrderCannotBeDeleted);
+        }
+
+        await _orderRepository.DeleteAsync(order, autoSave: true);
+    }
+
+    private async Task<Order> GetOrderAggregateAsync(Guid id)
+    {
+        var query = await _orderRepository.WithDetailsAsync(order => order.Items);
+
+        var order = await AsyncExecuter.FirstOrDefaultAsync(
+            query.Where(order => order.Id == id)
+        );
+
+        if (order == null)
+        {
+            throw new EntityNotFoundException(typeof(Order), id);
+        }
+
+        return order;
+    }
+
+    private static IQueryable<Order> ApplyFilter(IQueryable<Order> query, string? filter)
+    {
+        if (string.IsNullOrWhiteSpace(filter))
+        {
+            return query;
+        }
+
+        var normalizedFilter = filter.Trim();
+
+        return query.Where(order =>
+            order.OrderNumber.Contains(normalizedFilter) ||
+            order.CustomerName.Contains(normalizedFilter) ||
+            (order.CustomerPhone != null && order.CustomerPhone.Contains(normalizedFilter)) ||
+            (order.Note != null && order.Note.Contains(normalizedFilter)));
+    }
+
+    private static IQueryable<Order> ApplySorting(IQueryable<Order> query, string? sorting)
+    {
+        if (string.IsNullOrWhiteSpace(sorting))
+        {
+            return query.OrderByDescending(order => order.CreationTime);
+        }
+
+        return sorting.Trim().ToLowerInvariant() switch
+        {
+            "ordernumber" or "ordernumber asc" => query.OrderBy(order => order.OrderNumber),
+            "ordernumber desc" => query.OrderByDescending(order => order.OrderNumber),
+
+            "customername" or "customername asc" => query.OrderBy(order => order.CustomerName),
+            "customername desc" => query.OrderByDescending(order => order.CustomerName),
+
+            "status" or "status asc" => query.OrderBy(order => order.Status),
+            "status desc" => query.OrderByDescending(order => order.Status),
+
+            "totalamount" or "totalamount asc" => query.OrderBy(order => order.TotalAmount),
+            "totalamount desc" => query.OrderByDescending(order => order.TotalAmount),
+
+            "creationtime" or "creationtime desc" => query.OrderByDescending(order => order.CreationTime),
+            "creationtime asc" => query.OrderBy(order => order.CreationTime),
+
+            _ => query.OrderByDescending(order => order.CreationTime)
+        };
+    }
+
+    private static Expression<Func<Order, OrderDto>> MapToDtoExpression()
+    {
+        return order => new OrderDto
+        {
+            Id = order.Id,
+            OrderNumber = order.OrderNumber,
+            CustomerName = order.CustomerName,
+            CustomerPhone = order.CustomerPhone,
+            Note = order.Note,
+            Status = new LookupDto
+            {
+                Id = (int)order.Status,
+                Name = order.Status.ToString()
+            },
+            TotalAmount = order.TotalAmount,
+            CreationTime = order.CreationTime,
+            CreatorId = order.CreatorId,
+            LastModificationTime = order.LastModificationTime,
+            LastModifierId = order.LastModifierId,
+            IsDeleted = order.IsDeleted,
+            DeleterId = order.DeleterId,
+            DeletionTime = order.DeletionTime
+        };
+    }
+
+    private static Expression<Func<Order, OrderDetailsDto>> MapToDetailsDtoExpression()
+    {
+        return order => new OrderDetailsDto
+        {
+            Id = order.Id,
+            OrderNumber = order.OrderNumber,
+            CustomerName = order.CustomerName,
+            CustomerPhone = order.CustomerPhone,
+            Note = order.Note,
+            Status = new LookupDto
+            {
+                Id = (int)order.Status,
+                Name = order.Status.ToString()
+            },
+            TotalAmount = order.TotalAmount,
+            Items = order.Items
+                .OrderBy(item => item.CreationTime)
+                .Select(item => new OrderItemDto
+                {
+                    Id = item.Id,
+                    OrderId = item.OrderId,
+                    ProductVariantId = item.ProductVariantId,
+                    ProductName = item.ProductName,
+                    Color = item.Color,
+                    Size = item.Size,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice,
+                    LineTotal = item.LineTotal,
+                    CreationTime = item.CreationTime,
+                    CreatorId = item.CreatorId,
+                    LastModificationTime = item.LastModificationTime,
+                    LastModifierId = item.LastModifierId,
+                    IsDeleted = item.IsDeleted,
+                    DeleterId = item.DeleterId,
+                    DeletionTime = item.DeletionTime
+                })
+                .ToList(),
+            CreationTime = order.CreationTime,
+            CreatorId = order.CreatorId,
+            LastModificationTime = order.LastModificationTime,
+            LastModifierId = order.LastModifierId,
+            IsDeleted = order.IsDeleted,
+            DeleterId = order.DeleterId,
+            DeletionTime = order.DeletionTime
+        };
+    }
+}

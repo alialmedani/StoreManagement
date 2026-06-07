@@ -25,6 +25,19 @@
     "StoreManagement:InventoryNoteTooLong": "Inventory note is too long.",
     "StoreManagement:ProductVariantHasMovements": "Cannot delete product variant because it has stock movements. Deactivate it instead.",
     "StoreManagement:InventoryInvalidMovementSource": "Inventory movement source is invalid.",
-    "StoreManagement:InventoryManualMovementTypeNotAllowed": "This inventory movement type cannot be created manually."
+    "StoreManagement:InventoryManualMovementTypeNotAllowed": "This inventory movement type cannot be created manually.",
+    "StoreManagement:OrderNumberRequired": "Order number is required.",
+    "StoreManagement:OrderTextTooLong": "Order text value is too long.",
+    "StoreManagement:OrderItemRequired": "Order must contain at least one item.",
+    "StoreManagement:OrderQuantityInvalid": "Order item quantity is invalid.",
+    "StoreManagement:OrderUnitPriceInvalid": "Order item unit price is invalid.",
+    "StoreManagement:OrderCannotBeConfirmed": "Order cannot be confirmed in its current status.",
+    "StoreManagement:OrderCannotBeCancelled": "Order cannot be cancelled in its current status.",
+    "StoreManagement:OrderCannotBeUpdated": "Order cannot be updated in its current status.",
+    "StoreManagement:OrderProductVariantNotFound": "Order product variant does not exist.",
+    "StoreManagement:OrderProductVariantInactive": "Order product variant is inactive.",
+    "StoreManagement:OrderInsufficientStock": "Insufficient stock for one or more order items.",
+    "StoreManagement:OrderCustomerNameRequired": "Customer name is required.",
+    "StoreManagement:OrderCannotBeDeleted": "Order cannot be deleted in its current status."
   }
 }

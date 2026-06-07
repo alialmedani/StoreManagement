@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using StoreManagement.Categories;
 using StoreManagement.Inventory;
+using StoreManagement.Orders;
 using StoreManagement.Products;
 using Volo.Abp.AuditLogging.EntityFrameworkCore;
 using Volo.Abp.BackgroundJobs.EntityFrameworkCore;
@@ -39,6 +40,10 @@ public class StoreManagementDbContext :
     public DbSet<ProductVariant> ProductVariants { get; set; }
 
     public DbSet<StockMovement> StockMovements { get; set; }
+
+    public DbSet<Order> Orders { get; set; }
+
+    public DbSet<OrderItem> OrderItems { get; set; }
 
     #region Entities from the modules
 
@@ -282,6 +287,111 @@ public class StoreManagementDbContext :
 
             b.HasIndex(movement => movement.CreationTime)
                 .HasDatabaseName("IX_StoreManagement_StockMovements_CreationTime");
+        });
+
+        builder.Entity<Order>(b =>
+        {
+            b.ToTable(
+                StoreManagementConsts.DbTablePrefix + "Orders",
+                StoreManagementConsts.DbSchema
+            );
+
+            b.ConfigureByConvention();
+
+            b.Property(order => order.OrderNumber)
+                .IsRequired()
+                .HasMaxLength(OrderConsts.MaxOrderNumberLength);
+
+            b.Property(order => order.CustomerName)
+                .IsRequired()
+                .HasMaxLength(OrderConsts.MaxCustomerNameLength);
+
+            b.Property(order => order.CustomerPhone)
+                .HasMaxLength(OrderConsts.MaxCustomerPhoneLength);
+
+            b.Property(order => order.Note)
+                .HasMaxLength(OrderConsts.MaxNoteLength);
+
+            b.Property(order => order.Status)
+                .IsRequired();
+
+            b.Property(order => order.TotalAmount)
+                .IsRequired()
+                .HasPrecision(18, 2);
+
+            b.HasMany(order => order.Items)
+                .WithOne(item => item.Order)
+                .HasForeignKey(item => item.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.Navigation(order => order.Items)
+                .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            b.HasIndex(order => order.OrderNumber)
+                .IsUnique()
+                .HasFilter("[IsDeleted] = 0")
+                .HasDatabaseName("UX_StoreManagement_Orders_OrderNumber_Active");
+
+            b.HasIndex(order => order.Status)
+                .HasDatabaseName("IX_StoreManagement_Orders_Status");
+
+            b.HasIndex(order => order.CreationTime)
+                .HasDatabaseName("IX_StoreManagement_Orders_CreationTime");
+        });
+
+        builder.Entity<OrderItem>(b =>
+        {
+            b.ToTable(
+                StoreManagementConsts.DbTablePrefix + "OrderItems",
+                StoreManagementConsts.DbSchema
+            );
+
+            b.ConfigureByConvention();
+
+            b.Property(item => item.OrderId)
+                .IsRequired();
+
+            b.Property(item => item.ProductVariantId)
+                .IsRequired();
+
+            b.Property(item => item.ProductName)
+                .IsRequired()
+                .HasMaxLength(ProductConsts.MaxNameLength);
+
+            b.Property(item => item.Color)
+                .IsRequired()
+                .HasMaxLength(ProductVariantConsts.MaxColorLength);
+
+            b.Property(item => item.Size)
+                .IsRequired()
+                .HasMaxLength(ProductVariantConsts.MaxSizeLength);
+
+            b.Property(item => item.Quantity)
+                .IsRequired();
+
+            b.Property(item => item.UnitPrice)
+                .IsRequired()
+                .HasPrecision(18, 2);
+
+            b.Property(item => item.LineTotal)
+                .IsRequired()
+                .HasPrecision(18, 2);
+
+            b.HasOne(item => item.Order)
+                .WithMany(order => order.Items)
+                .HasForeignKey(item => item.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasOne(item => item.ProductVariant)
+                .WithMany()
+                .HasForeignKey(item => item.ProductVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            b.HasIndex(item => item.OrderId)
+                .HasDatabaseName("IX_StoreManagement_OrderItems_OrderId");
+
+            b.HasIndex(item => item.ProductVariantId)
+                .HasDatabaseName("IX_StoreManagement_OrderItems_ProductVariantId");
         });
     }
 }

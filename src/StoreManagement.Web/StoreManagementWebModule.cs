@@ -202,6 +202,21 @@ public class StoreManagementWebModule : AbpModule
             
             options.Map(StoreManagementDomainErrorCodes.InventoryInvalidMovementSource, HttpStatusCode.BadRequest);
             options.Map(StoreManagementDomainErrorCodes.InventoryManualMovementTypeNotAllowed, HttpStatusCode.BadRequest);
+            
+            options.Map(StoreManagementDomainErrorCodes.OrderNumberRequired, HttpStatusCode.BadRequest);
+            options.Map(StoreManagementDomainErrorCodes.OrderCustomerNameRequired, HttpStatusCode.BadRequest);
+            options.Map(StoreManagementDomainErrorCodes.OrderTextTooLong, HttpStatusCode.BadRequest);
+            options.Map(StoreManagementDomainErrorCodes.OrderItemRequired, HttpStatusCode.BadRequest);
+            options.Map(StoreManagementDomainErrorCodes.OrderQuantityInvalid, HttpStatusCode.BadRequest);
+            options.Map(StoreManagementDomainErrorCodes.OrderUnitPriceInvalid, HttpStatusCode.BadRequest);
+            options.Map(StoreManagementDomainErrorCodes.OrderProductVariantNotFound, HttpStatusCode.BadRequest);
+            options.Map(StoreManagementDomainErrorCodes.OrderProductVariantInactive, HttpStatusCode.BadRequest);
+
+            options.Map(StoreManagementDomainErrorCodes.OrderCannotBeConfirmed, HttpStatusCode.Conflict);
+            options.Map(StoreManagementDomainErrorCodes.OrderCannotBeCancelled, HttpStatusCode.Conflict);
+            options.Map(StoreManagementDomainErrorCodes.OrderCannotBeUpdated, HttpStatusCode.Conflict);
+            options.Map(StoreManagementDomainErrorCodes.OrderCannotBeDeleted, HttpStatusCode.Conflict);
+            options.Map(StoreManagementDomainErrorCodes.OrderInsufficientStock, HttpStatusCode.Conflict);
         });
     }
 
