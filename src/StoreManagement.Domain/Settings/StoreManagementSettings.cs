@@ -4,6 +4,9 @@ public static class StoreManagementSettings
 {
     private const string Prefix = "StoreManagement";
 
-    //Add your own setting names here. Example:
-    //public const string MySetting1 = Prefix + ".MySetting1";
+    public const string AllowNegativeStock = Prefix + ".Inventory.AllowNegativeStock";
+
+    public const string AllowCancelConfirmedOrder = Prefix + ".Orders.AllowCancelConfirmedOrder";
+
+    public const string OrderNumberPrefix = Prefix + ".Orders.NumberPrefix";
 }

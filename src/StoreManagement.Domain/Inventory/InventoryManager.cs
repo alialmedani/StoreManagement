@@ -1,9 +1,11 @@
 using System;
 using System.Threading.Tasks;
 using StoreManagement.Products;
+using StoreManagement.Settings;
 using Volo.Abp;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Domain.Services;
+using Volo.Abp.Settings;
 
 namespace StoreManagement.Inventory;
 
@@ -11,13 +13,16 @@ public class InventoryManager : DomainService
 {
     private readonly IRepository<ProductVariant, Guid> _productVariantRepository;
     private readonly IRepository<StockMovement, Guid> _stockMovementRepository;
+    private readonly ISettingProvider _settingProvider;
 
     public InventoryManager(
         IRepository<ProductVariant, Guid> productVariantRepository,
-        IRepository<StockMovement, Guid> stockMovementRepository)
+        IRepository<StockMovement, Guid> stockMovementRepository,
+        ISettingProvider settingProvider)
     {
         _productVariantRepository = productVariantRepository;
         _stockMovementRepository = stockMovementRepository;
+        _settingProvider = settingProvider;
     }
 
     public async Task<StockMovement> AdjustManuallyAsync(
@@ -149,7 +154,12 @@ public class InventoryManager : DomainService
         var oldQuantity = variant.StockQuantity;
         var newQuantity = oldQuantity + quantityChange;
 
-        if (newQuantity < 0)
+        var allowNegativeStock = await IsSettingEnabledAsync(
+            StoreManagementSettings.AllowNegativeStock,
+            defaultValue: false
+        );
+
+        if (!allowNegativeStock && newQuantity < 0)
         {
             throw new BusinessException(StoreManagementDomainErrorCodes.InventoryStockCannotBeNegative);
         }
@@ -230,11 +240,20 @@ public class InventoryManager : DomainService
             throw new BusinessException(StoreManagementDomainErrorCodes.InventoryQuantityChangeCannotBeZero);
         }
 
-        if (newQuantity.Value < 0)
+        return newQuantity.Value - oldQuantity;
+    }
+
+    private async Task<bool> IsSettingEnabledAsync(string settingName, bool defaultValue)
+    {
+        var value = await _settingProvider.GetOrNullAsync(settingName);
+
+        if (string.IsNullOrWhiteSpace(value))
         {
-            throw new BusinessException(StoreManagementDomainErrorCodes.InventoryStockCannotBeNegative);
+            return defaultValue;
         }
 
-        return newQuantity.Value - oldQuantity;
+        return bool.TryParse(value, out var result)
+            ? result
+            : defaultValue;
     }
 }

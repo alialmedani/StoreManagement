@@ -38,6 +38,9 @@
     "StoreManagement:OrderProductVariantInactive": "Order product variant is inactive.",
     "StoreManagement:OrderInsufficientStock": "Insufficient stock for one or more order items.",
     "StoreManagement:OrderCustomerNameRequired": "Customer name is required.",
-    "StoreManagement:OrderCannotBeDeleted": "Order cannot be deleted in its current status."
+    "StoreManagement:OrderCannotBeDeleted": "Order cannot be deleted in its current status.",
+    "DisplayName:AllowNegativeStock": "Allow negative stock",
+    "DisplayName:AllowCancelConfirmedOrder": "Allow cancel confirmed order",
+    "DisplayName:OrderNumberPrefix": "Order number prefix"
   }
 }

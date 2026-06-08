@@ -3,10 +3,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using StoreManagement.Inventory;
 using StoreManagement.Products;
+using StoreManagement.Settings;
 using Volo.Abp;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Domain.Services;
 using Volo.Abp.Linq;
+using Volo.Abp.Settings;
 
 namespace StoreManagement.Orders;
 
@@ -15,31 +17,39 @@ public class OrderManager : DomainService
     private readonly IRepository<ProductVariant, Guid> _productVariantRepository;
     private readonly InventoryManager _inventoryManager;
     private readonly IAsyncQueryableExecuter _asyncExecuter;
+    private readonly ISettingProvider _settingProvider;
 
     public OrderManager(
         IRepository<ProductVariant, Guid> productVariantRepository,
         InventoryManager inventoryManager,
-        IAsyncQueryableExecuter asyncExecuter)
+        IAsyncQueryableExecuter asyncExecuter,
+        ISettingProvider settingProvider)
     {
         _productVariantRepository = productVariantRepository;
         _inventoryManager = inventoryManager;
         _asyncExecuter = asyncExecuter;
+        _settingProvider = settingProvider;
     }
 
-    public Task<Order> CreateAsync(
+    public async Task<Order> CreateAsync(
         string customerName,
         string? customerPhone,
         string? note)
     {
+        var orderNumberPrefix = await GetSettingValueAsync(
+            StoreManagementSettings.OrderNumberPrefix,
+            defaultValue: "ORD"
+        );
+
         var order = new Order(
             GuidGenerator.Create(),
-            GenerateOrderNumber(),
+            GenerateOrderNumber(orderNumberPrefix),
             customerName,
             customerPhone,
             note
         );
 
-        return Task.FromResult(order);
+        return order;
     }
 
     public async Task AddItemAsync(
@@ -50,7 +60,12 @@ public class OrderManager : DomainService
     {
         var variantInfo = await GetAvailableProductVariantInfoAsync(productVariantId);
 
-        if (variantInfo.StockQuantity < quantity)
+        var allowNegativeStock = await IsSettingEnabledAsync(
+            StoreManagementSettings.AllowNegativeStock,
+            defaultValue: false
+        );
+
+        if (!allowNegativeStock && variantInfo.StockQuantity < quantity)
         {
             throw new BusinessException(StoreManagementDomainErrorCodes.OrderInsufficientStock);
         }
@@ -67,11 +82,16 @@ public class OrderManager : DomainService
 
     public async Task ConfirmAsync(Order order)
     {
+        var allowNegativeStock = await IsSettingEnabledAsync(
+            StoreManagementSettings.AllowNegativeStock,
+            defaultValue: false
+        );
+
         foreach (var item in order.Items)
         {
             var variantInfo = await GetAvailableProductVariantInfoAsync(item.ProductVariantId);
 
-            if (variantInfo.StockQuantity < item.Quantity)
+            if (!allowNegativeStock && variantInfo.StockQuantity < item.Quantity)
             {
                 throw new BusinessException(StoreManagementDomainErrorCodes.OrderInsufficientStock);
             }
@@ -93,6 +113,19 @@ public class OrderManager : DomainService
     public async Task CancelAsync(Order order)
     {
         var wasConfirmed = order.IsConfirmed();
+
+        if (wasConfirmed)
+        {
+            var allowCancelConfirmedOrder = await IsSettingEnabledAsync(
+                StoreManagementSettings.AllowCancelConfirmedOrder,
+                defaultValue: true
+            );
+
+            if (!allowCancelConfirmedOrder)
+            {
+                throw new BusinessException(StoreManagementDomainErrorCodes.OrderCannotBeCancelled);
+            }
+        }
 
         order.Cancel();
 
@@ -149,14 +182,41 @@ public class OrderManager : DomainService
         return variantInfo;
     }
 
-    private string GenerateOrderNumber()
+    private string GenerateOrderNumber(string prefix)
     {
+        var safePrefix = string.IsNullOrWhiteSpace(prefix)
+            ? "ORD"
+            : prefix.Trim().ToUpperInvariant();
+
         var suffix = GuidGenerator.Create()
             .ToString("N")
             .Substring(0, 6)
             .ToUpperInvariant();
 
-        return $"ORD-{Clock.Now:yyyyMMddHHmmssfff}-{suffix}";
+        return $"{safePrefix}-{Clock.Now:yyyyMMddHHmmssfff}-{suffix}";
+    }
+
+    private async Task<bool> IsSettingEnabledAsync(string settingName, bool defaultValue)
+    {
+        var value = await _settingProvider.GetOrNullAsync(settingName);
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return defaultValue;
+        }
+
+        return bool.TryParse(value, out var result)
+            ? result
+            : defaultValue;
+    }
+
+    private async Task<string> GetSettingValueAsync(string settingName, string defaultValue)
+    {
+        var value = await _settingProvider.GetOrNullAsync(settingName);
+
+        return string.IsNullOrWhiteSpace(value)
+            ? defaultValue
+            : value.Trim();
     }
 
     private sealed record ProductVariantInfo(

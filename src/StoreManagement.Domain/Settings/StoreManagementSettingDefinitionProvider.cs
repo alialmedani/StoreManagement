@@ -1,4 +1,6 @@
-﻿using Volo.Abp.Settings;
+﻿using StoreManagement.Localization;
+using Volo.Abp.Localization;
+using Volo.Abp.Settings;
 
 namespace StoreManagement.Settings;
 
@@ -6,7 +8,33 @@ public class StoreManagementSettingDefinitionProvider : SettingDefinitionProvide
 {
     public override void Define(ISettingDefinitionContext context)
     {
-        //Define your own settings here. Example:
-        //context.Add(new SettingDefinition(StoreManagementSettings.MySetting1));
+        context.Add(
+            new SettingDefinition(
+                StoreManagementSettings.AllowNegativeStock,
+                "false",
+                L("DisplayName:AllowNegativeStock")
+            )
+        );
+
+        context.Add(
+            new SettingDefinition(
+                StoreManagementSettings.AllowCancelConfirmedOrder,
+                "true",
+                L("DisplayName:AllowCancelConfirmedOrder")
+            )
+        );
+
+        context.Add(
+            new SettingDefinition(
+                StoreManagementSettings.OrderNumberPrefix,
+                "ORD",
+                L("DisplayName:OrderNumberPrefix")
+            )
+        );
+    }
+
+    private static LocalizableString L(string name)
+    {
+        return LocalizableString.Create<StoreManagementResource>(name);
     }
 }
