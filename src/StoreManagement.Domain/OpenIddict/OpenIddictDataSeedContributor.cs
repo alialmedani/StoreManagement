@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using OpenIddict.Abstractions;
+using Volo.Abp;
 using Volo.Abp.Data;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.OpenIddict;
@@ -12,10 +13,14 @@ using Volo.Abp.Uow;
 
 namespace StoreManagement.OpenIddict;
 
-/* Creates initial data that is needed to property run the application
+/*
+ * Creates initial data that is needed to properly run the application
  * and make client-to-server communication possible.
  */
-public class OpenIddictDataSeedContributor : OpenIddictDataSeedContributorBase, IDataSeedContributor, ITransientDependency
+public class OpenIddictDataSeedContributor :
+    OpenIddictDataSeedContributorBase,
+    IDataSeedContributor,
+    ITransientDependency
 {
     public OpenIddictDataSeedContributor(
         IConfiguration configuration,
@@ -23,7 +28,12 @@ public class OpenIddictDataSeedContributor : OpenIddictDataSeedContributorBase, 
         IAbpApplicationManager applicationManager,
         IOpenIddictScopeRepository openIddictScopeRepository,
         IOpenIddictScopeManager scopeManager)
-        : base(configuration, openIddictApplicationRepository, applicationManager, openIddictScopeRepository, scopeManager)
+        : base(
+            configuration,
+            openIddictApplicationRepository,
+            applicationManager,
+            openIddictScopeRepository,
+            scopeManager)
     {
     }
 
@@ -36,17 +46,18 @@ public class OpenIddictDataSeedContributor : OpenIddictDataSeedContributorBase, 
 
     private async Task CreateScopesAsync()
     {
-        await CreateScopesAsync(new OpenIddictScopeDescriptor 
+        await CreateScopesAsync(new OpenIddictScopeDescriptor
         {
-            Name = "StoreManagement", 
-            DisplayName = "StoreManagement API", 
+            Name = "StoreManagement",
+            DisplayName = "StoreManagement API",
             Resources = { "StoreManagement" }
         });
     }
 
     private async Task CreateApplicationsAsync()
     {
-        var commonScopes = new List<string> {
+        var commonScopes = new List<string>
+        {
             OpenIddictConstants.Permissions.Scopes.Address,
             OpenIddictConstants.Permissions.Scopes.Email,
             OpenIddictConstants.Permissions.Scopes.Phone,
@@ -57,47 +68,61 @@ public class OpenIddictDataSeedContributor : OpenIddictDataSeedContributorBase, 
 
         var configurationSection = Configuration.GetSection("OpenIddict:Applications");
 
+        // Mobile Client
+        var mobileClientId = configurationSection["StoreManagement_Mobile:ClientId"];
 
-        // Console Test / Angular Client
-        
-        var appClientId = configurationSection["StoreManagement_App:ClientId"];
-        if (!appClientId.IsNullOrWhiteSpace())
+        if (!mobileClientId.IsNullOrWhiteSpace())
         {
-            var appClientRootUrl = configurationSection["StoreManagement_App:RootUrl"]?.TrimEnd('/');
+            var mobileRedirectUri = configurationSection["StoreManagement_Mobile:RedirectUri"];
+            var mobilePostLogoutRedirectUri = configurationSection["StoreManagement_Mobile:PostLogoutRedirectUri"];
+
+            if (mobileRedirectUri.IsNullOrWhiteSpace())
+            {
+                throw new AbpException("StoreManagement_Mobile:RedirectUri is missing in OpenIddict applications configuration.");
+            }
+
+            if (mobilePostLogoutRedirectUri.IsNullOrWhiteSpace())
+            {
+                throw new AbpException("StoreManagement_Mobile:PostLogoutRedirectUri is missing in OpenIddict applications configuration.");
+            }
+
             await CreateOrUpdateApplicationAsync(
-                applicationType: OpenIddictConstants.ApplicationTypes.Web,
-                name: appClientId!,
+                applicationType: OpenIddictConstants.ApplicationTypes.Native,
+                name: mobileClientId!,
                 type: OpenIddictConstants.ClientTypes.Public,
                 consentType: OpenIddictConstants.ConsentTypes.Implicit,
-                displayName: "Console Test / Angular Application",
+                displayName: "StoreManagement Mobile Application",
                 secret: null,
-                grantTypes: new List<string> {
+                grantTypes: new List<string>
+                {
                     OpenIddictConstants.GrantTypes.AuthorizationCode,
-                    OpenIddictConstants.GrantTypes.Password,
-                    OpenIddictConstants.GrantTypes.ClientCredentials,
-                    OpenIddictConstants.GrantTypes.RefreshToken,
-                    "LinkLogin",
-                    "Impersonation"
+                    OpenIddictConstants.GrantTypes.RefreshToken
                 },
                 scopes: commonScopes,
-                redirectUris: new List<string> { appClientRootUrl },
-                postLogoutRedirectUris: new List<string> { appClientRootUrl },
-                clientUri: appClientRootUrl,
-                logoUri: "/images/clients/angular.svg"
+                redirectUris: new List<string>
+                {
+                    mobileRedirectUri!
+                },
+                postLogoutRedirectUris: new List<string>
+                {
+                    mobilePostLogoutRedirectUri!
+                },
+                clientUri: null,
+                logoUri: null
             );
         }
 
-        
-        
-
-
-
-
         // Swagger Client
         var swaggerClientId = configurationSection["StoreManagement_Swagger:ClientId"];
+
         if (!swaggerClientId.IsNullOrWhiteSpace())
         {
             var swaggerRootUrl = configurationSection["StoreManagement_Swagger:RootUrl"]?.TrimEnd('/');
+
+            if (swaggerRootUrl.IsNullOrWhiteSpace())
+            {
+                throw new AbpException("StoreManagement_Swagger:RootUrl is missing in OpenIddict applications configuration.");
+            }
 
             await CreateOrUpdateApplicationAsync(
                 applicationType: OpenIddictConstants.ApplicationTypes.Web,
@@ -106,14 +131,18 @@ public class OpenIddictDataSeedContributor : OpenIddictDataSeedContributorBase, 
                 consentType: OpenIddictConstants.ConsentTypes.Implicit,
                 displayName: "Swagger Application",
                 secret: null,
-                grantTypes: new List<string> { OpenIddictConstants.GrantTypes.AuthorizationCode, },
+                grantTypes: new List<string>
+                {
+                    OpenIddictConstants.GrantTypes.AuthorizationCode
+                },
                 scopes: commonScopes,
-                redirectUris: new List<string> { $"{swaggerRootUrl}/swagger/oauth2-redirect.html" },
+                redirectUris: new List<string>
+                {
+                    $"{swaggerRootUrl}/swagger/oauth2-redirect.html"
+                },
                 clientUri: swaggerRootUrl.EnsureEndsWith('/') + "swagger",
                 logoUri: "/images/clients/swagger.svg"
             );
         }
-
-
     }
 }
