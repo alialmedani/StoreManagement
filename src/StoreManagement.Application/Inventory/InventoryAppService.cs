@@ -2,7 +2,9 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using StoreManagement.Common;
+using StoreManagement.Permissions;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Entities;
@@ -80,6 +82,7 @@ public class InventoryAppService : ApplicationService, IInventoryAppService
         return movement;
     }
 
+    [Authorize(StoreManagementPermissions.Inventory.AdjustStock)]
     public async Task<StockMovementDto> AdjustStockAsync(AdjustStockDto input)
     {
         var movement = await _inventoryManager.AdjustManuallyAsync(

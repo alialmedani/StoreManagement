@@ -2,14 +2,15 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using StoreManagement.Common;
+using StoreManagement.Permissions;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Domain.Entities;
 using Volo.Abp.Domain.Repositories;
-using Microsoft.AspNetCore.Authorization;
-using StoreManagement.Permissions;
+
 namespace StoreManagement.Orders;
 
 public class OrderAppService : ApplicationService, IOrderAppService
@@ -66,8 +67,8 @@ public class OrderAppService : ApplicationService, IOrderAppService
 
         return order;
     }
-    [Authorize(StoreManagementPermissions.Orders.Create)]
 
+    [Authorize(StoreManagementPermissions.Orders.Create)]
     public async Task<OrderDetailsDto> CreateAsync(CreateOrderDto input)
     {
         if (input.Items == null || input.Items.Count == 0)
@@ -95,8 +96,8 @@ public class OrderAppService : ApplicationService, IOrderAppService
 
         return await GetAsync(order.Id);
     }
-    [Authorize(StoreManagementPermissions.Orders.Edit)]
 
+    [Authorize(StoreManagementPermissions.Orders.Edit)]
     public async Task<OrderDetailsDto> UpdateAsync(Guid id, UpdateOrderDto input)
     {
         var order = await GetOrderAggregateAsync(id);
@@ -111,8 +112,8 @@ public class OrderAppService : ApplicationService, IOrderAppService
 
         return await GetAsync(order.Id);
     }
-    [Authorize(StoreManagementPermissions.Orders.Edit)]
 
+    [Authorize(StoreManagementPermissions.Orders.Edit)]
     public async Task<OrderDetailsDto> AddItemAsync(Guid id, AddOrderItemDto input)
     {
         var order = await GetOrderAggregateAsync(id);
@@ -128,8 +129,8 @@ public class OrderAppService : ApplicationService, IOrderAppService
 
         return await GetAsync(order.Id);
     }
-    [Authorize(StoreManagementPermissions.Orders.Delete)]
 
+    [Authorize(StoreManagementPermissions.Orders.Edit)]
     public async Task<OrderDetailsDto> UpdateItemAsync(Guid id, Guid itemId, UpdateOrderItemDto input)
     {
         var order = await GetOrderAggregateAsync(id);
@@ -144,8 +145,8 @@ public class OrderAppService : ApplicationService, IOrderAppService
 
         return await GetAsync(order.Id);
     }
-    [Authorize(StoreManagementPermissions.Orders.Delete)]
 
+    [Authorize(StoreManagementPermissions.Orders.Edit)]
     public async Task<OrderDetailsDto> RemoveItemAsync(Guid id, Guid itemId)
     {
         var order = await GetOrderAggregateAsync(id);
@@ -156,8 +157,8 @@ public class OrderAppService : ApplicationService, IOrderAppService
 
         return await GetAsync(order.Id);
     }
-    [Authorize(StoreManagementPermissions.Orders.Delete)]
 
+    [Authorize(StoreManagementPermissions.Orders.Confirm)]
     public async Task<OrderDetailsDto> ConfirmAsync(Guid id)
     {
         var order = await GetOrderAggregateAsync(id);
@@ -169,6 +170,7 @@ public class OrderAppService : ApplicationService, IOrderAppService
         return await GetAsync(order.Id);
     }
 
+    [Authorize(StoreManagementPermissions.Orders.Cancel)]
     public async Task<OrderDetailsDto> CancelAsync(Guid id)
     {
         var order = await GetOrderAggregateAsync(id);
@@ -179,8 +181,8 @@ public class OrderAppService : ApplicationService, IOrderAppService
 
         return await GetAsync(order.Id);
     }
-    [Authorize(StoreManagementPermissions.Orders.Delete)]
 
+    [Authorize(StoreManagementPermissions.Orders.Delete)]
     public async Task DeleteAsync(Guid id)
     {
         var order = await GetOrderAggregateAsync(id);
@@ -192,7 +194,6 @@ public class OrderAppService : ApplicationService, IOrderAppService
 
         await _orderRepository.DeleteAsync(order, autoSave: true);
     }
-    [Authorize(StoreManagementPermissions.Orders.Delete)]
 
     private async Task<Order> GetOrderAggregateAsync(Guid id)
     {

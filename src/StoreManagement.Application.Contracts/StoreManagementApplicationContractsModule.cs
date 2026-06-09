@@ -5,7 +5,7 @@ using Volo.Abp.SettingManagement;
 using Volo.Abp.FeatureManagement;
 using Volo.Abp.Identity;
 using Volo.Abp.TenantManagement;
-
+using Volo.Abp.FluentValidation;
 namespace StoreManagement;
 
 [DependsOn(
@@ -15,7 +15,10 @@ namespace StoreManagement;
     typeof(AbpIdentityApplicationContractsModule),
     typeof(AbpAccountApplicationContractsModule),
     typeof(AbpTenantManagementApplicationContractsModule),
-    typeof(AbpPermissionManagementApplicationContractsModule)
+    typeof(AbpPermissionManagementApplicationContractsModule),
+    typeof(AbpFluentValidationModule)
+    
+    
 )]
 public class StoreManagementApplicationContractsModule : AbpModule
 {
