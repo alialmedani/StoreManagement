@@ -10,7 +10,8 @@ using Volo.Abp.Application.Services;
 using Volo.Abp.Data;
 using Volo.Abp.Domain.Entities;
 using Volo.Abp.Domain.Repositories;
-
+using Microsoft.AspNetCore.Authorization;
+using StoreManagement.Permissions;
 namespace StoreManagement.Products;
 
 public class ProductAppService : ApplicationService, IProductAppService
@@ -136,6 +137,7 @@ public class ProductAppService : ApplicationService, IProductAppService
 
         return product;
     }
+    [Authorize(StoreManagementPermissions.Products.Create)]
 
     public async Task<ProductDto> CreateAsync(CreateProductDto input)
     {
@@ -160,6 +162,7 @@ public class ProductAppService : ApplicationService, IProductAppService
 
         return await GetDtoAsync(product.Id);
     }
+    [Authorize(StoreManagementPermissions.Products.Edit)]
 
     public async Task<ProductDto> UpdateAsync(Guid id, UpdateProductDto input)
     {
@@ -200,6 +203,7 @@ public class ProductAppService : ApplicationService, IProductAppService
 
         return await GetDtoAsync(product.Id);
     }
+    [Authorize(StoreManagementPermissions.Products.Delete)]
 
     public async Task DeleteAsync(Guid id)
     {
@@ -219,6 +223,7 @@ public class ProductAppService : ApplicationService, IProductAppService
 
         await _productRepository.DeleteAsync(product, autoSave: true);
     }
+    [Authorize(StoreManagementPermissions.Products.Restore)]
 
     public async Task RestoreAsync(Guid id)
     {

@@ -12,7 +12,8 @@ using Volo.Abp.Application.Services;
 using Volo.Abp.Data;
 using Volo.Abp.Domain.Entities;
 using Volo.Abp.Domain.Repositories;
-
+using Microsoft.AspNetCore.Authorization;
+using StoreManagement.Permissions;
 namespace StoreManagement.Products;
 
 public class ProductVariantAppService : ApplicationService, IProductVariantAppService
@@ -201,6 +202,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
             Variants = variants
         };
     }
+    [Authorize(StoreManagementPermissions.ProductVariants.Create)]
 
     public async Task<ProductVariantDto> CreateAsync(CreateProductVariantDto input)
     {
@@ -230,6 +232,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         return await GetAsync(variant.Id);
     }
+    [Authorize(StoreManagementPermissions.ProductVariants.Create)]
 
     public async Task<List<ProductVariantDto>> BulkCreateAsync(CreateBulkProductVariantsDto input)
     {
@@ -276,6 +279,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         return await GetByIdsAsync(variants.Select(variant => variant.Id).ToList());
     }
+    [Authorize(StoreManagementPermissions.ProductVariants.Create)]
 
     public async Task<List<ProductVariantDto>> GenerateAsync(GenerateProductVariantsDto input)
     {
@@ -336,6 +340,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         return await GetByIdsAsync(variants.Select(variant => variant.Id).ToList());
     }
+    [Authorize(StoreManagementPermissions.ProductVariants.Edit)]
 
     public async Task<ProductVariantDto> UpdateAsync(Guid id, UpdateProductVariantDto input)
     {
@@ -360,6 +365,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         return await GetAsync(variant.Id);
     }
+    [Authorize(StoreManagementPermissions.ProductVariants.Delete)]
 
     public async Task DeleteAsync(Guid id)
     {
@@ -382,6 +388,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         await _productVariantRepository.DeleteAsync(variant, autoSave: true);
     }
+    [Authorize(StoreManagementPermissions.ProductVariants.Restore)]
 
     public async Task RestoreAsync(Guid id)
     {

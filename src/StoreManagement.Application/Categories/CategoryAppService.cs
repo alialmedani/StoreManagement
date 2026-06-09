@@ -9,7 +9,8 @@ using Volo.Abp.Data;
 using Volo.Abp.Domain.Entities;
 using Volo.Abp.Domain.Repositories;
 using StoreManagement.Products;
- 
+using Microsoft.AspNetCore.Authorization;
+using StoreManagement.Permissions;
 
 namespace StoreManagement.Categories;
 
@@ -82,6 +83,7 @@ public class CategoryAppService : ApplicationService, ICategoryAppService
 
         return MapToDto(category);
     }
+    [Authorize(StoreManagementPermissions.Categories.Create)]
 
     public async Task<CategoryDto> CreateAsync(CreateCategoryDto input)
     {
@@ -107,6 +109,7 @@ public class CategoryAppService : ApplicationService, ICategoryAppService
 
         return MapToDto(category);
     }
+    [Authorize(StoreManagementPermissions.Categories.Edit)]
 
     public async Task<CategoryDto> UpdateAsync(Guid id, UpdateCategoryDto input)
     {
@@ -138,6 +141,7 @@ public class CategoryAppService : ApplicationService, ICategoryAppService
 
         return MapToDto(category);
     }
+    [Authorize(StoreManagementPermissions.Categories.Delete)]
 
     public async Task DeleteAsync(Guid id)
     {
@@ -150,6 +154,7 @@ public class CategoryAppService : ApplicationService, ICategoryAppService
 
         await _categoryRepository.DeleteAsync(category, autoSave: true);
     }
+    [Authorize(StoreManagementPermissions.Categories.Restore)]
 
     public async Task RestoreAsync(Guid id)
     {
