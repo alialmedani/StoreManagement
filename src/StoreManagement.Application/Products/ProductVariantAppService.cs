@@ -41,11 +41,14 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
         _settingProvider = settingProvider;
     }
 
-    public async Task<PagedResultDto<ProductVariantDto>> GetListAsync(StoreManagementPagedAndSortedResultRequestDto input)
+    public async Task<PagedResultDto<ProductVariantDto>> GetListAsync(ProductVariantPagedAndSortedResultRequestDto input)
     {
+        var lowStockThreshold = await GetLowStockThresholdAsync();
+
         var query = await _productVariantRepository.GetQueryableAsync();
 
         query = ApplyFilter(query, input.Filter);
+        query = ApplyAvailabilityStatusFilter(query, input.AvailabilityStatus, lowStockThreshold);
         query = ApplySorting(query, input.Sorting);
 
         var totalCount = await AsyncExecuter.CountAsync(query);
@@ -56,8 +59,6 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
                 .Take(input.MaxResultCount)
                 .Select(MapToDtoExpression())
         );
-
-        var lowStockThreshold = await GetLowStockThresholdAsync();
 
         ApplyAvailabilityStatus(items, lowStockThreshold);
 
@@ -66,13 +67,16 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
     public async Task<PagedResultDto<ProductVariantDto>> GetByProductAsync(
         Guid productId,
-        StoreManagementPagedAndSortedResultRequestDto input)
+        ProductVariantPagedAndSortedResultRequestDto input)
     {
+        var lowStockThreshold = await GetLowStockThresholdAsync();
+
         var query = await _productVariantRepository.GetQueryableAsync();
 
         query = query.Where(variant => variant.ProductId == productId);
 
         query = ApplyFilter(query, input.Filter);
+        query = ApplyAvailabilityStatusFilter(query, input.AvailabilityStatus, lowStockThreshold);
         query = ApplySorting(query, input.Sorting);
 
         var totalCount = await AsyncExecuter.CountAsync(query);
@@ -84,22 +88,23 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
                 .Select(MapToDtoExpression())
         );
 
-        var lowStockThreshold = await GetLowStockThresholdAsync();
-
         ApplyAvailabilityStatus(items, lowStockThreshold);
 
         return new PagedResultDto<ProductVariantDto>(totalCount, items);
     }
 
-    public async Task<PagedResultDto<ProductVariantDto>> GetDeletedListAsync(StoreManagementPagedAndSortedResultRequestDto input)
+    public async Task<PagedResultDto<ProductVariantDto>> GetDeletedListAsync(ProductVariantPagedAndSortedResultRequestDto input)
     {
         using (_softDeleteFilter.Disable())
         {
+            var lowStockThreshold = await GetLowStockThresholdAsync();
+
             var query = await _productVariantRepository.GetQueryableAsync();
 
             query = query.Where(variant => variant.IsDeleted);
 
             query = ApplyFilter(query, input.Filter);
+            query = ApplyAvailabilityStatusFilter(query, input.AvailabilityStatus, lowStockThreshold);
             query = ApplySorting(query, input.Sorting);
 
             var totalCount = await AsyncExecuter.CountAsync(query);
@@ -110,8 +115,6 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
                     .Take(input.MaxResultCount)
                     .Select(MapToDtoExpression())
             );
-
-            var lowStockThreshold = await GetLowStockThresholdAsync();
 
             ApplyAvailabilityStatus(items, lowStockThreshold);
 
@@ -579,6 +582,32 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
             variant.Color.Contains(normalizedFilter) ||
             variant.Size.Contains(normalizedFilter) ||
             variant.Product.Name.Contains(normalizedFilter));
+    }
+
+    private static IQueryable<ProductVariant> ApplyAvailabilityStatusFilter(
+        IQueryable<ProductVariant> query,
+        ProductAvailabilityStatus? availabilityStatus,
+        int lowStockThreshold)
+    {
+        if (!availabilityStatus.HasValue)
+        {
+            return query;
+        }
+
+        return availabilityStatus.Value switch
+        {
+            ProductAvailabilityStatus.OutOfStock => query.Where(variant =>
+                variant.StockQuantity <= 0),
+
+            ProductAvailabilityStatus.LowStock => query.Where(variant =>
+                variant.StockQuantity > 0 &&
+                variant.StockQuantity <= lowStockThreshold),
+
+            ProductAvailabilityStatus.InStock => query.Where(variant =>
+                variant.StockQuantity > lowStockThreshold),
+
+            _ => query
+        };
     }
 
     private static IQueryable<ProductVariant> ApplySorting(IQueryable<ProductVariant> query, string? sorting)

@@ -18,32 +18,33 @@ public static class ProductAvailabilityCalculator
             : DefaultLowStockThreshold;
     }
 
-    public static LookupDto CreateStatus(
+    public static ProductAvailabilityStatus CalculateStatus(
         int stockQuantity,
         int lowStockThreshold)
     {
         if (stockQuantity <= 0)
         {
-            return new LookupDto
-            {
-                Id = (int)ProductAvailabilityStatus.OutOfStock,
-                Name = ProductAvailabilityStatus.OutOfStock.ToString()
-            };
+            return ProductAvailabilityStatus.OutOfStock;
         }
 
         if (stockQuantity <= lowStockThreshold)
         {
-            return new LookupDto
-            {
-                Id = (int)ProductAvailabilityStatus.LowStock,
-                Name = ProductAvailabilityStatus.LowStock.ToString()
-            };
+            return ProductAvailabilityStatus.LowStock;
         }
+
+        return ProductAvailabilityStatus.InStock;
+    }
+
+    public static LookupDto CreateStatus(
+        int stockQuantity,
+        int lowStockThreshold)
+    {
+        var status = CalculateStatus(stockQuantity, lowStockThreshold);
 
         return new LookupDto
         {
-            Id = (int)ProductAvailabilityStatus.InStock,
-            Name = ProductAvailabilityStatus.InStock.ToString()
+            Id = (int)status,
+            Name = status.ToString()
         };
     }
 }

@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using StoreManagement.Common;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
 
@@ -8,9 +7,11 @@ namespace StoreManagement.Products;
 
 public interface IProductAppService : IApplicationService
 {
-    Task<PagedResultDto<ProductDto>> GetListAsync(StoreManagementPagedAndSortedResultRequestDto input);
+    Task<PagedResultDto<ProductDto>> GetListAsync(ProductPagedAndSortedResultRequestDto input);
 
-    Task<PagedResultDto<ProductDto>> GetDeletedListAsync(StoreManagementPagedAndSortedResultRequestDto input);
+    Task<PagedResultDto<ProductDto>> GetDeletedListAsync(ProductPagedAndSortedResultRequestDto input);
+
+    Task<ProductDashboardSummaryDto> GetDashboardSummaryAsync();
 
     Task<ProductDetailsDto> GetAsync(Guid id);
 
