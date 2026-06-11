@@ -146,7 +146,7 @@ public class ProductAppService : ApplicationService, IProductAppService
 
         var lowStockThreshold = await GetLowStockThresholdAsync();
 
-        product.AvailabilityStatus = CreateAvailabilityStatus(
+        product.AvailabilityStatus = ProductAvailabilityCalculator.CreateStatus(
             product.TotalStockQuantity,
             lowStockThreshold
         );
@@ -296,7 +296,7 @@ public class ProductAppService : ApplicationService, IProductAppService
 
         var lowStockThreshold = await GetLowStockThresholdAsync();
 
-        product.AvailabilityStatus = CreateAvailabilityStatus(
+        product.AvailabilityStatus = ProductAvailabilityCalculator.CreateStatus(
             product.TotalStockQuantity,
             lowStockThreshold
         );
@@ -414,14 +414,7 @@ public class ProductAppService : ApplicationService, IProductAppService
     {
         var value = await _settingProvider.GetOrNullAsync(StoreManagementSettings.LowStockThreshold);
 
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return 5;
-        }
-
-        return int.TryParse(value, out var result) && result >= 0
-            ? result
-            : 5;
+        return ProductAvailabilityCalculator.NormalizeLowStockThreshold(value);
     }
 
     private static void ApplyAvailabilityStatus(
@@ -430,40 +423,11 @@ public class ProductAppService : ApplicationService, IProductAppService
     {
         foreach (var item in items)
         {
-            item.AvailabilityStatus = CreateAvailabilityStatus(
+            item.AvailabilityStatus = ProductAvailabilityCalculator.CreateStatus(
                 item.TotalStockQuantity,
                 lowStockThreshold
             );
         }
-    }
-
-    private static LookupDto CreateAvailabilityStatus(
-        int stockQuantity,
-        int lowStockThreshold)
-    {
-        if (stockQuantity <= 0)
-        {
-            return new LookupDto
-            {
-                Id = (int)ProductAvailabilityStatus.OutOfStock,
-                Name = ProductAvailabilityStatus.OutOfStock.ToString()
-            };
-        }
-
-        if (stockQuantity <= lowStockThreshold)
-        {
-            return new LookupDto
-            {
-                Id = (int)ProductAvailabilityStatus.LowStock,
-                Name = ProductAvailabilityStatus.LowStock.ToString()
-            };
-        }
-
-        return new LookupDto
-        {
-            Id = (int)ProductAvailabilityStatus.InStock,
-            Name = ProductAvailabilityStatus.InStock.ToString()
-        };
     }
 
     private static string NormalizeName(string name)

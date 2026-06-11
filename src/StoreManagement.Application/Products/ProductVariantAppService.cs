@@ -136,7 +136,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         var lowStockThreshold = await GetLowStockThresholdAsync();
 
-        variant.AvailabilityStatus = CreateAvailabilityStatus(
+        variant.AvailabilityStatus = ProductAvailabilityCalculator.CreateStatus(
             variant.StockQuantity,
             lowStockThreshold
         );
@@ -634,14 +634,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
     {
         var value = await _settingProvider.GetOrNullAsync(StoreManagementSettings.LowStockThreshold);
 
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return 5;
-        }
-
-        return int.TryParse(value, out var result) && result >= 0
-            ? result
-            : 5;
+        return ProductAvailabilityCalculator.NormalizeLowStockThreshold(value);
     }
 
     private static void ApplyAvailabilityStatus(
@@ -650,40 +643,11 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
     {
         foreach (var item in items)
         {
-            item.AvailabilityStatus = CreateAvailabilityStatus(
+            item.AvailabilityStatus = ProductAvailabilityCalculator.CreateStatus(
                 item.StockQuantity,
                 lowStockThreshold
             );
         }
-    }
-
-    private static LookupDto CreateAvailabilityStatus(
-        int stockQuantity,
-        int lowStockThreshold)
-    {
-        if (stockQuantity <= 0)
-        {
-            return new LookupDto
-            {
-                Id = (int)ProductAvailabilityStatus.OutOfStock,
-                Name = ProductAvailabilityStatus.OutOfStock.ToString()
-            };
-        }
-
-        if (stockQuantity <= lowStockThreshold)
-        {
-            return new LookupDto
-            {
-                Id = (int)ProductAvailabilityStatus.LowStock,
-                Name = ProductAvailabilityStatus.LowStock.ToString()
-            };
-        }
-
-        return new LookupDto
-        {
-            Id = (int)ProductAvailabilityStatus.InStock,
-            Name = ProductAvailabilityStatus.InStock.ToString()
-        };
     }
 
     private static List<string> NormalizeGeneratedColors(List<string>? colors)
