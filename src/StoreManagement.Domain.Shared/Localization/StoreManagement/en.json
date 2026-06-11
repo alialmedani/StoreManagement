@@ -41,6 +41,35 @@
     "StoreManagement:OrderCannotBeDeleted": "Order cannot be deleted in its current status.",
     "DisplayName:AllowNegativeStock": "Allow negative stock",
     "DisplayName:AllowCancelConfirmedOrder": "Allow cancel confirmed order",
-    "DisplayName:OrderNumberPrefix": "Order number prefix"
+    "DisplayName:OrderNumberPrefix": "Order number prefix",
+    "Permission:StoreManagement": "Store Management",
+
+    "Permission:Categories": "Categories",
+    "Permission:Categories.Create": "Create category",
+    "Permission:Categories.Edit": "Edit category",
+    "Permission:Categories.Delete": "Delete category",
+    "Permission:Categories.Restore": "Restore category",
+
+    "Permission:Products": "Products",
+    "Permission:Products.Create": "Create product",
+    "Permission:Products.Edit": "Edit product",
+    "Permission:Products.Delete": "Delete product",
+    "Permission:Products.Restore": "Restore product",
+
+    "Permission:ProductVariants": "Product Variants",
+    "Permission:ProductVariants.Create": "Create product variant",
+    "Permission:ProductVariants.Edit": "Edit product variant",
+    "Permission:ProductVariants.Delete": "Delete product variant",
+    "Permission:ProductVariants.Restore": "Restore product variant",
+
+    "Permission:Inventory": "Inventory",
+    "Permission:Inventory.AdjustStock": "Adjust stock",
+
+    "Permission:Orders": "Orders",
+    "Permission:Orders.Create": "Create order",
+    "Permission:Orders.Edit": "Edit order",
+    "Permission:Orders.Delete": "Delete order",
+    "Permission:Orders.Confirm": "Confirm order",
+    "Permission:Orders.Cancel": "Cancel order"
   }
 }
