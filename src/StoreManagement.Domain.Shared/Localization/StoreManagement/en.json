@@ -70,6 +70,8 @@
     "Permission:Orders.Edit": "Edit order",
     "Permission:Orders.Delete": "Delete order",
     "Permission:Orders.Confirm": "Confirm order",
-    "Permission:Orders.Cancel": "Cancel order"
+    "Permission:Orders.Cancel": "Cancel order",
+
+    "DisplayName:LowStockThreshold": "Low stock threshold"
   }
 }

@@ -18,6 +18,14 @@ public class StoreManagementSettingDefinitionProvider : SettingDefinitionProvide
 
         context.Add(
             new SettingDefinition(
+                StoreManagementSettings.LowStockThreshold,
+                "5",
+                L("DisplayName:LowStockThreshold")
+            )
+        );
+
+        context.Add(
+            new SettingDefinition(
                 StoreManagementSettings.AllowCancelConfirmedOrder,
                 "true",
                 L("DisplayName:AllowCancelConfirmedOrder")

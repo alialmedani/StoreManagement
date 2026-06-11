@@ -15,17 +15,20 @@ namespace StoreManagement.Orders;
 public class OrderManager : DomainService
 {
     private readonly IRepository<ProductVariant, Guid> _productVariantRepository;
+    private readonly IRepository<OrderNumberSequence, Guid> _orderNumberSequenceRepository;
     private readonly InventoryManager _inventoryManager;
     private readonly IAsyncQueryableExecuter _asyncExecuter;
     private readonly ISettingProvider _settingProvider;
 
     public OrderManager(
         IRepository<ProductVariant, Guid> productVariantRepository,
+        IRepository<OrderNumberSequence, Guid> orderNumberSequenceRepository,
         InventoryManager inventoryManager,
         IAsyncQueryableExecuter asyncExecuter,
         ISettingProvider settingProvider)
     {
         _productVariantRepository = productVariantRepository;
+        _orderNumberSequenceRepository = orderNumberSequenceRepository;
         _inventoryManager = inventoryManager;
         _asyncExecuter = asyncExecuter;
         _settingProvider = settingProvider;
@@ -41,9 +44,11 @@ public class OrderManager : DomainService
             defaultValue: "ORD"
         );
 
+        var orderNumber = await GenerateOrderNumberAsync(orderNumberPrefix);
+
         var order = new Order(
             GuidGenerator.Create(),
-            GenerateOrderNumber(orderNumberPrefix),
+            orderNumber,
             customerName,
             customerPhone,
             note
@@ -145,6 +150,60 @@ public class OrderManager : DomainService
         }
     }
 
+    private async Task<string> GenerateOrderNumberAsync(string prefix)
+    {
+        var safePrefix = NormalizeOrderNumberPrefix(prefix);
+        var year = Clock.Now.Year;
+
+        var query = await _orderNumberSequenceRepository.GetQueryableAsync();
+
+        var sequence = await _asyncExecuter.FirstOrDefaultAsync(
+            query.Where(sequence =>
+                sequence.Prefix == safePrefix &&
+                sequence.Year == year
+            )
+        );
+
+        long number;
+
+        if (sequence == null)
+        {
+            sequence = new OrderNumberSequence(
+                GuidGenerator.Create(),
+                safePrefix,
+                year
+            );
+
+            number = sequence.GetNextNumber();
+
+            await _orderNumberSequenceRepository.InsertAsync(sequence, autoSave: false);
+        }
+        else
+        {
+            number = sequence.GetNextNumber();
+
+            await _orderNumberSequenceRepository.UpdateAsync(sequence, autoSave: false);
+        }
+
+        return $"{safePrefix}-{year}-{number.ToString().PadLeft(OrderConsts.OrderNumberSequenceLength, '0')}";
+    }
+
+    private static string NormalizeOrderNumberPrefix(string prefix)
+    {
+        var safePrefix = string.IsNullOrWhiteSpace(prefix)
+            ? "ORD"
+            : prefix.Trim().ToUpperInvariant();
+
+        if (safePrefix.Length > OrderConsts.MaxOrderNumberPrefixLength)
+        {
+            throw new BusinessException(StoreManagementDomainErrorCodes.OrderTextTooLong)
+                .WithData("PropertyName", "OrderNumberPrefix")
+                .WithData("MaxLength", OrderConsts.MaxOrderNumberPrefixLength);
+        }
+
+        return safePrefix;
+    }
+
     private async Task<ProductVariantInfo> GetAvailableProductVariantInfoAsync(Guid productVariantId)
     {
         if (productVariantId == Guid.Empty)
@@ -180,20 +239,6 @@ public class OrderManager : DomainService
         }
 
         return variantInfo;
-    }
-
-    private string GenerateOrderNumber(string prefix)
-    {
-        var safePrefix = string.IsNullOrWhiteSpace(prefix)
-            ? "ORD"
-            : prefix.Trim().ToUpperInvariant();
-
-        var suffix = GuidGenerator.Create()
-            .ToString("N")
-            .Substring(0, 6)
-            .ToUpperInvariant();
-
-        return $"{safePrefix}-{Clock.Now:yyyyMMddHHmmssfff}-{suffix}";
     }
 
     private async Task<bool> IsSettingEnabledAsync(string settingName, bool defaultValue)

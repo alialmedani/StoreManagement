@@ -1,17 +1,21 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using StoreManagement.Categories;
 using StoreManagement.Common;
+using StoreManagement.Permissions;
+using StoreManagement.Settings;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Data;
 using Volo.Abp.Domain.Entities;
 using Volo.Abp.Domain.Repositories;
-using Microsoft.AspNetCore.Authorization;
-using StoreManagement.Permissions;
+using Volo.Abp.Settings;
+
 namespace StoreManagement.Products;
 
 public class ProductAppService : ApplicationService, IProductAppService
@@ -20,17 +24,20 @@ public class ProductAppService : ApplicationService, IProductAppService
     private readonly IRepository<ProductVariant, Guid> _productVariantRepository;
     private readonly IRepository<Category, Guid> _categoryRepository;
     private readonly IDataFilter<ISoftDelete> _softDeleteFilter;
+    private readonly ISettingProvider _settingProvider;
 
     public ProductAppService(
         IRepository<Product, Guid> productRepository,
         IRepository<ProductVariant, Guid> productVariantRepository,
         IRepository<Category, Guid> categoryRepository,
-        IDataFilter<ISoftDelete> softDeleteFilter)
+        IDataFilter<ISoftDelete> softDeleteFilter,
+        ISettingProvider settingProvider)
     {
         _productRepository = productRepository;
         _productVariantRepository = productVariantRepository;
         _categoryRepository = categoryRepository;
         _softDeleteFilter = softDeleteFilter;
+        _settingProvider = settingProvider;
     }
 
     public async Task<PagedResultDto<ProductDto>> GetListAsync(StoreManagementPagedAndSortedResultRequestDto input)
@@ -48,6 +55,10 @@ public class ProductAppService : ApplicationService, IProductAppService
                 .Take(input.MaxResultCount)
                 .Select(MapToProductDtoExpression())
         );
+
+        var lowStockThreshold = await GetLowStockThresholdAsync();
+
+        ApplyAvailabilityStatus(items, lowStockThreshold);
 
         return new PagedResultDto<ProductDto>(totalCount, items);
     }
@@ -71,6 +82,10 @@ public class ProductAppService : ApplicationService, IProductAppService
                     .Take(input.MaxResultCount)
                     .Select(MapToProductDtoExpression())
             );
+
+            var lowStockThreshold = await GetLowStockThresholdAsync();
+
+            ApplyAvailabilityStatus(items, lowStockThreshold);
 
             return new PagedResultDto<ProductDto>(totalCount, items);
         }
@@ -129,6 +144,13 @@ public class ProductAppService : ApplicationService, IProductAppService
             throw new EntityNotFoundException(typeof(Product), id);
         }
 
+        var lowStockThreshold = await GetLowStockThresholdAsync();
+
+        product.AvailabilityStatus = CreateAvailabilityStatus(
+            product.TotalStockQuantity,
+            lowStockThreshold
+        );
+
         product.Variants = product.Variants
             .OrderBy(variant => variant.Color)
             .ThenBy(variant => ProductVariantSizeConsts.GetSortOrder(variant.Size))
@@ -137,8 +159,8 @@ public class ProductAppService : ApplicationService, IProductAppService
 
         return product;
     }
-    [Authorize(StoreManagementPermissions.Products.Create)]
 
+    [Authorize(StoreManagementPermissions.Products.Create)]
     public async Task<ProductDto> CreateAsync(CreateProductDto input)
     {
         await EnsureCategoryExistsAsync(input.CategoryId);
@@ -162,8 +184,8 @@ public class ProductAppService : ApplicationService, IProductAppService
 
         return await GetDtoAsync(product.Id);
     }
-    [Authorize(StoreManagementPermissions.Products.Edit)]
 
+    [Authorize(StoreManagementPermissions.Products.Edit)]
     public async Task<ProductDto> UpdateAsync(Guid id, UpdateProductDto input)
     {
         var product = await _productRepository.GetAsync(id);
@@ -203,8 +225,8 @@ public class ProductAppService : ApplicationService, IProductAppService
 
         return await GetDtoAsync(product.Id);
     }
-    [Authorize(StoreManagementPermissions.Products.Delete)]
 
+    [Authorize(StoreManagementPermissions.Products.Delete)]
     public async Task DeleteAsync(Guid id)
     {
         var product = await _productRepository.GetAsync(id);
@@ -223,8 +245,8 @@ public class ProductAppService : ApplicationService, IProductAppService
 
         await _productRepository.DeleteAsync(product, autoSave: true);
     }
-    [Authorize(StoreManagementPermissions.Products.Restore)]
 
+    [Authorize(StoreManagementPermissions.Products.Restore)]
     public async Task RestoreAsync(Guid id)
     {
         using (_softDeleteFilter.Disable())
@@ -271,6 +293,13 @@ public class ProductAppService : ApplicationService, IProductAppService
         {
             throw new EntityNotFoundException(typeof(Product), id);
         }
+
+        var lowStockThreshold = await GetLowStockThresholdAsync();
+
+        product.AvailabilityStatus = CreateAvailabilityStatus(
+            product.TotalStockQuantity,
+            lowStockThreshold
+        );
 
         return product;
     }
@@ -378,6 +407,62 @@ public class ProductAppService : ApplicationService, IProductAppService
             IsDeleted = product.IsDeleted,
             DeleterId = product.DeleterId,
             DeletionTime = product.DeletionTime
+        };
+    }
+
+    private async Task<int> GetLowStockThresholdAsync()
+    {
+        var value = await _settingProvider.GetOrNullAsync(StoreManagementSettings.LowStockThreshold);
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return 5;
+        }
+
+        return int.TryParse(value, out var result) && result >= 0
+            ? result
+            : 5;
+    }
+
+    private static void ApplyAvailabilityStatus(
+        List<ProductDto> items,
+        int lowStockThreshold)
+    {
+        foreach (var item in items)
+        {
+            item.AvailabilityStatus = CreateAvailabilityStatus(
+                item.TotalStockQuantity,
+                lowStockThreshold
+            );
+        }
+    }
+
+    private static LookupDto CreateAvailabilityStatus(
+        int stockQuantity,
+        int lowStockThreshold)
+    {
+        if (stockQuantity <= 0)
+        {
+            return new LookupDto
+            {
+                Id = (int)ProductAvailabilityStatus.OutOfStock,
+                Name = ProductAvailabilityStatus.OutOfStock.ToString()
+            };
+        }
+
+        if (stockQuantity <= lowStockThreshold)
+        {
+            return new LookupDto
+            {
+                Id = (int)ProductAvailabilityStatus.LowStock,
+                Name = ProductAvailabilityStatus.LowStock.ToString()
+            };
+        }
+
+        return new LookupDto
+        {
+            Id = (int)ProductAvailabilityStatus.InStock,
+            Name = ProductAvailabilityStatus.InStock.ToString()
         };
     }
 

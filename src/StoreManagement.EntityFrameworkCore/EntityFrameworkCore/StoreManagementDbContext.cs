@@ -45,6 +45,8 @@ public class StoreManagementDbContext :
 
     public DbSet<OrderItem> OrderItems { get; set; }
 
+    public DbSet<OrderNumberSequence> OrderNumberSequences { get; set; }
+
     #region Entities from the modules
 
     /*
@@ -95,7 +97,33 @@ public class StoreManagementDbContext :
         /*
          * Configure your own tables/entities inside here.
          */
+        builder.Entity<OrderNumberSequence>(b =>
+        {
+            b.ToTable(
+                StoreManagementConsts.DbTablePrefix + "OrderNumberSequences",
+                StoreManagementConsts.DbSchema
+            );
 
+            b.ConfigureByConvention();
+
+            b.Property(sequence => sequence.Prefix)
+                .IsRequired()
+                .HasMaxLength(OrderConsts.MaxOrderNumberPrefixLength);
+
+            b.Property(sequence => sequence.Year)
+                .IsRequired();
+
+            b.Property(sequence => sequence.NextNumber)
+                .IsRequired();
+
+            b.HasIndex(sequence => new
+                {
+                    sequence.Prefix,
+                    sequence.Year
+                })
+                .IsUnique()
+                .HasDatabaseName("UX_StoreManagement_OrderNumberSequences_Prefix_Year");
+        });
         builder.Entity<Category>(b =>
         {
             b.ToTable(

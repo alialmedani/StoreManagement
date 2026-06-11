@@ -14,6 +14,8 @@ public class ProductDto : FullAuditedEntityDto<Guid>
 
     public int TotalStockQuantity { get; set; }
 
+    public LookupDto AvailabilityStatus { get; set; } = new();
+
     public bool IsActive { get; set; }
 
     public EntityLookupDto Category { get; set; } = new();

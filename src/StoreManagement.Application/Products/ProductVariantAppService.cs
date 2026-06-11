@@ -3,17 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using StoreManagement.Categories;
 using StoreManagement.Common;
 using StoreManagement.Inventory;
+using StoreManagement.Permissions;
+using StoreManagement.Settings;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Data;
 using Volo.Abp.Domain.Entities;
 using Volo.Abp.Domain.Repositories;
-using Microsoft.AspNetCore.Authorization;
-using StoreManagement.Permissions;
+using Volo.Abp.Settings;
+
 namespace StoreManagement.Products;
 
 public class ProductVariantAppService : ApplicationService, IProductVariantAppService
@@ -22,17 +25,20 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
     private readonly IRepository<Product, Guid> _productRepository;
     private readonly InventoryManager _inventoryManager;
     private readonly IDataFilter<ISoftDelete> _softDeleteFilter;
+    private readonly ISettingProvider _settingProvider;
 
     public ProductVariantAppService(
         IRepository<ProductVariant, Guid> productVariantRepository,
         IRepository<Product, Guid> productRepository,
         InventoryManager inventoryManager,
-        IDataFilter<ISoftDelete> softDeleteFilter)
+        IDataFilter<ISoftDelete> softDeleteFilter,
+        ISettingProvider settingProvider)
     {
         _productVariantRepository = productVariantRepository;
         _productRepository = productRepository;
         _inventoryManager = inventoryManager;
         _softDeleteFilter = softDeleteFilter;
+        _settingProvider = settingProvider;
     }
 
     public async Task<PagedResultDto<ProductVariantDto>> GetListAsync(StoreManagementPagedAndSortedResultRequestDto input)
@@ -50,6 +56,10 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
                 .Take(input.MaxResultCount)
                 .Select(MapToDtoExpression())
         );
+
+        var lowStockThreshold = await GetLowStockThresholdAsync();
+
+        ApplyAvailabilityStatus(items, lowStockThreshold);
 
         return new PagedResultDto<ProductVariantDto>(totalCount, items);
     }
@@ -74,6 +84,10 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
                 .Select(MapToDtoExpression())
         );
 
+        var lowStockThreshold = await GetLowStockThresholdAsync();
+
+        ApplyAvailabilityStatus(items, lowStockThreshold);
+
         return new PagedResultDto<ProductVariantDto>(totalCount, items);
     }
 
@@ -97,6 +111,10 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
                     .Select(MapToDtoExpression())
             );
 
+            var lowStockThreshold = await GetLowStockThresholdAsync();
+
+            ApplyAvailabilityStatus(items, lowStockThreshold);
+
             return new PagedResultDto<ProductVariantDto>(totalCount, items);
         }
     }
@@ -115,6 +133,13 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
         {
             throw new EntityNotFoundException(typeof(ProductVariant), id);
         }
+
+        var lowStockThreshold = await GetLowStockThresholdAsync();
+
+        variant.AvailabilityStatus = CreateAvailabilityStatus(
+            variant.StockQuantity,
+            lowStockThreshold
+        );
 
         return variant;
     }
@@ -202,8 +227,8 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
             Variants = variants
         };
     }
-    [Authorize(StoreManagementPermissions.ProductVariants.Create)]
 
+    [Authorize(StoreManagementPermissions.ProductVariants.Create)]
     public async Task<ProductVariantDto> CreateAsync(CreateProductVariantDto input)
     {
         var productInfo = await GetProductInfoAsync(input.ProductId);
@@ -232,8 +257,8 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         return await GetAsync(variant.Id);
     }
-    [Authorize(StoreManagementPermissions.ProductVariants.Create)]
 
+    [Authorize(StoreManagementPermissions.ProductVariants.Create)]
     public async Task<List<ProductVariantDto>> BulkCreateAsync(CreateBulkProductVariantsDto input)
     {
         var productInfo = await GetProductInfoAsync(input.ProductId);
@@ -279,8 +304,8 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         return await GetByIdsAsync(variants.Select(variant => variant.Id).ToList());
     }
-    [Authorize(StoreManagementPermissions.ProductVariants.Create)]
 
+    [Authorize(StoreManagementPermissions.ProductVariants.Create)]
     public async Task<List<ProductVariantDto>> GenerateAsync(GenerateProductVariantsDto input)
     {
         var productInfo = await GetProductInfoAsync(input.ProductId);
@@ -340,8 +365,8 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         return await GetByIdsAsync(variants.Select(variant => variant.Id).ToList());
     }
-    [Authorize(StoreManagementPermissions.ProductVariants.Edit)]
 
+    [Authorize(StoreManagementPermissions.ProductVariants.Edit)]
     public async Task<ProductVariantDto> UpdateAsync(Guid id, UpdateProductVariantDto input)
     {
         var variant = await _productVariantRepository.GetAsync(id);
@@ -365,8 +390,8 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         return await GetAsync(variant.Id);
     }
-    [Authorize(StoreManagementPermissions.ProductVariants.Delete)]
 
+    [Authorize(StoreManagementPermissions.ProductVariants.Delete)]
     public async Task DeleteAsync(Guid id)
     {
         var variant = await _productVariantRepository.GetAsync(id);
@@ -388,8 +413,8 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         await _productVariantRepository.DeleteAsync(variant, autoSave: true);
     }
-    [Authorize(StoreManagementPermissions.ProductVariants.Restore)]
 
+    [Authorize(StoreManagementPermissions.ProductVariants.Restore)]
     public async Task RestoreAsync(Guid id)
     {
         using (_softDeleteFilter.Disable())
@@ -469,6 +494,10 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
                 .Where(variant => ids.Contains(variant.Id))
                 .Select(MapToDtoExpression())
         );
+
+        var lowStockThreshold = await GetLowStockThresholdAsync();
+
+        ApplyAvailabilityStatus(items, lowStockThreshold);
 
         return items
             .OrderBy(item => item.Color)
@@ -598,6 +627,62 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
             IsDeleted = variant.IsDeleted,
             DeleterId = variant.DeleterId,
             DeletionTime = variant.DeletionTime
+        };
+    }
+
+    private async Task<int> GetLowStockThresholdAsync()
+    {
+        var value = await _settingProvider.GetOrNullAsync(StoreManagementSettings.LowStockThreshold);
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return 5;
+        }
+
+        return int.TryParse(value, out var result) && result >= 0
+            ? result
+            : 5;
+    }
+
+    private static void ApplyAvailabilityStatus(
+        List<ProductVariantDto> items,
+        int lowStockThreshold)
+    {
+        foreach (var item in items)
+        {
+            item.AvailabilityStatus = CreateAvailabilityStatus(
+                item.StockQuantity,
+                lowStockThreshold
+            );
+        }
+    }
+
+    private static LookupDto CreateAvailabilityStatus(
+        int stockQuantity,
+        int lowStockThreshold)
+    {
+        if (stockQuantity <= 0)
+        {
+            return new LookupDto
+            {
+                Id = (int)ProductAvailabilityStatus.OutOfStock,
+                Name = ProductAvailabilityStatus.OutOfStock.ToString()
+            };
+        }
+
+        if (stockQuantity <= lowStockThreshold)
+        {
+            return new LookupDto
+            {
+                Id = (int)ProductAvailabilityStatus.LowStock,
+                Name = ProductAvailabilityStatus.LowStock.ToString()
+            };
+        }
+
+        return new LookupDto
+        {
+            Id = (int)ProductAvailabilityStatus.InStock,
+            Name = ProductAvailabilityStatus.InStock.ToString()
         };
     }
 
