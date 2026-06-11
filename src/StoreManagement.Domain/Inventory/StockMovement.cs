@@ -38,7 +38,8 @@ public class StockMovement : FullAuditedEntity<Guid>
         int newQuantity,
         StockMovementSourceType sourceType,
         Guid? referenceId = null,
-        string? note = null)
+        string? note = null,
+        bool allowNegativeStock = false)
         : base(id)
     {
         if (productVariantId == Guid.Empty)
@@ -66,7 +67,7 @@ public class StockMovement : FullAuditedEntity<Guid>
             throw new BusinessException(StoreManagementDomainErrorCodes.InventoryQuantityChangeCannotBeZero);
         }
 
-        if (oldQuantity < 0 || newQuantity < 0)
+        if (!allowNegativeStock && newQuantity < 0)
         {
             throw new BusinessException(StoreManagementDomainErrorCodes.InventoryStockCannotBeNegative);
         }

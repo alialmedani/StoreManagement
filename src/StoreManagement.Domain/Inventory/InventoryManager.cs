@@ -76,7 +76,8 @@ public class InventoryManager : DomainService
             variant.StockQuantity,
             StockMovementSourceType.ProductVariant,
             variant.Id,
-            note
+            note,
+            allowNegativeStock: false
         );
 
         await _stockMovementRepository.InsertAsync(movement, autoSave: true);
@@ -164,7 +165,7 @@ public class InventoryManager : DomainService
             throw new BusinessException(StoreManagementDomainErrorCodes.InventoryStockCannotBeNegative);
         }
 
-        variant.SetStockQuantity(newQuantity);
+        variant.SetStockQuantity(newQuantity, allowNegativeStock);
 
         var movement = new StockMovement(
             GuidGenerator.Create(),
@@ -175,7 +176,8 @@ public class InventoryManager : DomainService
             newQuantity,
             sourceType,
             referenceId,
-            note
+            note,
+            allowNegativeStock
         );
 
         await _productVariantRepository.UpdateAsync(variant, autoSave: true);

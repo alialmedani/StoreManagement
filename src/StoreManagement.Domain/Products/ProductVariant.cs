@@ -37,7 +37,7 @@ public class ProductVariant : FullAuditedEntity<Guid>
     {
         ProductId = productId;
         SetColorAndSize(color, size);
-        SetStockQuantity(stockQuantity);
+        SetStockQuantity(stockQuantity, allowNegativeStock: false);
         IsActive = isActive;
     }
 
@@ -61,7 +61,12 @@ public class ProductVariant : FullAuditedEntity<Guid>
 
     public void SetStockQuantity(int stockQuantity)
     {
-        if (stockQuantity < 0)
+        SetStockQuantity(stockQuantity, allowNegativeStock: false);
+    }
+
+    public void SetStockQuantity(int stockQuantity, bool allowNegativeStock)
+    {
+        if (!allowNegativeStock && stockQuantity < 0)
         {
             throw new BusinessException(StoreManagementDomainErrorCodes.ProductVariantStockCannotBeNegative);
         }
@@ -81,12 +86,24 @@ public class ProductVariant : FullAuditedEntity<Guid>
 
     public void DecreaseStock(int quantity)
     {
-        if (quantity <= 0 || StockQuantity - quantity < 0)
+        DecreaseStock(quantity, allowNegativeStock: false);
+    }
+
+    public void DecreaseStock(int quantity, bool allowNegativeStock)
+    {
+        if (quantity <= 0)
         {
             throw new BusinessException(StoreManagementDomainErrorCodes.ProductVariantStockCannotBeNegative);
         }
 
-        StockQuantity -= quantity;
+        var newQuantity = StockQuantity - quantity;
+
+        if (!allowNegativeStock && newQuantity < 0)
+        {
+            throw new BusinessException(StoreManagementDomainErrorCodes.ProductVariantStockCannotBeNegative);
+        }
+
+        StockQuantity = newQuantity;
     }
 
     public void Activate()
