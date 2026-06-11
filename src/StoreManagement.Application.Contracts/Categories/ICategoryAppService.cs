@@ -12,6 +12,8 @@ public interface ICategoryAppService : IApplicationService
 
     Task<PagedResultDto<CategoryDto>> GetDeletedListAsync(StoreManagementPagedAndSortedResultRequestDto input);
 
+    Task<PagedResultDto<CategoryStockSummaryDto>> GetStockSummaryAsync(CategoryStockSummaryRequestDto input);
+
     Task<CategoryDto> GetAsync(Guid id);
 
     Task<CategoryDto> CreateAsync(CreateCategoryDto input);
