@@ -48,6 +48,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
         var query = await _productVariantRepository.GetQueryableAsync();
 
         query = ApplyFilter(query, input.Filter);
+        query = ApplyCategoryFilter(query, input.CategoryId);
         query = ApplyAvailabilityStatusFilter(query, input.AvailabilityStatus, lowStockThreshold);
         query = ApplySorting(query, input.Sorting);
 
@@ -76,6 +77,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
         query = query.Where(variant => variant.ProductId == productId);
 
         query = ApplyFilter(query, input.Filter);
+        query = ApplyCategoryFilter(query, input.CategoryId);
         query = ApplyAvailabilityStatusFilter(query, input.AvailabilityStatus, lowStockThreshold);
         query = ApplySorting(query, input.Sorting);
 
@@ -104,6 +106,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
             query = query.Where(variant => variant.IsDeleted);
 
             query = ApplyFilter(query, input.Filter);
+            query = ApplyCategoryFilter(query, input.CategoryId);
             query = ApplyAvailabilityStatusFilter(query, input.AvailabilityStatus, lowStockThreshold);
             query = ApplySorting(query, input.Sorting);
 
@@ -582,6 +585,18 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
             variant.Color.Contains(normalizedFilter) ||
             variant.Size.Contains(normalizedFilter) ||
             variant.Product.Name.Contains(normalizedFilter));
+    }
+
+    private static IQueryable<ProductVariant> ApplyCategoryFilter(
+        IQueryable<ProductVariant> query,
+        Guid? categoryId)
+    {
+        if (!categoryId.HasValue || categoryId.Value == Guid.Empty)
+        {
+            return query;
+        }
+
+        return query.Where(variant => variant.Product.CategoryId == categoryId.Value);
     }
 
     private static IQueryable<ProductVariant> ApplyAvailabilityStatusFilter(

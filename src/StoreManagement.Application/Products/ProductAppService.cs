@@ -47,6 +47,7 @@ public class ProductAppService : ApplicationService, IProductAppService
         var query = await _productRepository.GetQueryableAsync();
 
         query = ApplyFilter(query, input.Filter);
+        query = ApplyCategoryFilter(query, input.CategoryId);
         query = ApplyAvailabilityStatusFilter(query, input.AvailabilityStatus, lowStockThreshold);
         query = ApplySorting(query, input.Sorting);
 
@@ -75,6 +76,7 @@ public class ProductAppService : ApplicationService, IProductAppService
             query = query.Where(product => product.IsDeleted);
 
             query = ApplyFilter(query, input.Filter);
+            query = ApplyCategoryFilter(query, input.CategoryId);
             query = ApplyAvailabilityStatusFilter(query, input.AvailabilityStatus, lowStockThreshold);
             query = ApplySorting(query, input.Sorting);
 
@@ -424,6 +426,18 @@ public class ProductAppService : ApplicationService, IProductAppService
             product.Name.Contains(normalizedFilter) ||
             (product.Description != null && product.Description.Contains(normalizedFilter)) ||
             product.Category.Name.Contains(normalizedFilter));
+    }
+
+    private static IQueryable<Product> ApplyCategoryFilter(
+        IQueryable<Product> query,
+        Guid? categoryId)
+    {
+        if (!categoryId.HasValue || categoryId.Value == Guid.Empty)
+        {
+            return query;
+        }
+
+        return query.Where(product => product.CategoryId == categoryId.Value);
     }
 
     private static IQueryable<Product> ApplyAvailabilityStatusFilter(
