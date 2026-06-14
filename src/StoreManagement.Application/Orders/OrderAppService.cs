@@ -1,4 +1,4 @@
-using System;
+ using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -13,7 +13,9 @@ using Volo.Abp.Domain.Repositories;
 
 namespace StoreManagement.Orders;
 
-public class OrderAppService : ApplicationService, IOrderAppService
+public class OrderAppService :
+    ApplicationService,
+    IOrderAppService
 {
     private readonly IRepository<Order, Guid> _orderRepository;
     private readonly OrderManager _orderManager;
@@ -26,61 +28,83 @@ public class OrderAppService : ApplicationService, IOrderAppService
         _orderManager = orderManager;
     }
 
-    public async Task<PagedResultDto<OrderDto>> GetListAsync(OrderPagedRequestDto input)
+    public async Task<PagedResultDto<OrderDto>>
+        GetListAsync(OrderPagedRequestDto input)
     {
-        var query = await _orderRepository.GetQueryableAsync();
+        var query =
+            await _orderRepository.GetQueryableAsync();
 
         if (input.Status.HasValue)
         {
-            query = query.Where(order => order.Status == input.Status.Value);
+            query = query.Where(order =>
+                order.Status == input.Status.Value
+            );
         }
 
         query = ApplyFilter(query, input.Filter);
         query = ApplySorting(query, input.Sorting);
 
-        var totalCount = await AsyncExecuter.CountAsync(query);
+        var totalCount =
+            await AsyncExecuter.CountAsync(query);
 
-        var items = await AsyncExecuter.ToListAsync(
-            query
-                .Skip(input.SkipCount)
-                .Take(input.MaxResultCount)
-                .Select(MapToDtoExpression())
+        var items =
+            await AsyncExecuter.ToListAsync(
+                query
+                    .Skip(input.SkipCount)
+                    .Take(input.MaxResultCount)
+                    .Select(MapToDtoExpression())
+            );
+
+        return new PagedResultDto<OrderDto>(
+            totalCount,
+            items
         );
-
-        return new PagedResultDto<OrderDto>(totalCount, items);
     }
 
     public async Task<OrderDetailsDto> GetAsync(Guid id)
     {
-        var query = await _orderRepository.GetQueryableAsync();
+        var query =
+            await _orderRepository.GetQueryableAsync();
 
-        var order = await AsyncExecuter.FirstOrDefaultAsync(
-            query
-                .Where(order => order.Id == id)
-                .Select(MapToDetailsDtoExpression())
-        );
+        var order =
+            await AsyncExecuter.FirstOrDefaultAsync(
+                query
+                    .Where(order => order.Id == id)
+                    .Select(
+                        MapToDetailsDtoExpression()
+                    )
+            );
 
         if (order == null)
         {
-            throw new EntityNotFoundException(typeof(Order), id);
+            throw new EntityNotFoundException(
+                typeof(Order),
+                id
+            );
         }
 
         return order;
     }
 
     [Authorize(StoreManagementPermissions.Orders.Create)]
-    public async Task<OrderDetailsDto> CreateAsync(CreateOrderDto input)
+    public async Task<OrderDetailsDto> CreateAsync(
+        CreateOrderDto input)
     {
-        if (input.Items == null || input.Items.Count == 0)
+        if (input.Items == null ||
+            input.Items.Count == 0)
         {
-            throw new BusinessException(StoreManagementDomainErrorCodes.OrderItemRequired);
+            throw new BusinessException(
+                StoreManagementDomainErrorCodes
+                    .OrderItemRequired
+            );
         }
 
-        var order = await _orderManager.CreateAsync(
-            input.CustomerName,
-            input.CustomerPhone,
-            input.Note
-        );
+        var order =
+            await _orderManager.CreateAsync(
+                input.CustomerName,
+                input.CustomerPhone,
+                input.Note
+            );
 
         foreach (var item in input.Items)
         {
@@ -92,15 +116,21 @@ public class OrderAppService : ApplicationService, IOrderAppService
             );
         }
 
-        await _orderRepository.InsertAsync(order, autoSave: true);
+        await _orderRepository.InsertAsync(
+            order,
+            autoSave: true
+        );
 
         return await GetAsync(order.Id);
     }
 
     [Authorize(StoreManagementPermissions.Orders.Edit)]
-    public async Task<OrderDetailsDto> UpdateAsync(Guid id, UpdateOrderDto input)
+    public async Task<OrderDetailsDto> UpdateAsync(
+        Guid id,
+        UpdateOrderDto input)
     {
-        var order = await GetOrderAggregateAsync(id);
+        var order =
+            await GetOrderAggregateAsync(id);
 
         order.UpdateHeader(
             input.CustomerName,
@@ -108,15 +138,21 @@ public class OrderAppService : ApplicationService, IOrderAppService
             input.Note
         );
 
-        await _orderRepository.UpdateAsync(order, autoSave: true);
+        await _orderRepository.UpdateAsync(
+            order,
+            autoSave: true
+        );
 
         return await GetAsync(order.Id);
     }
 
     [Authorize(StoreManagementPermissions.Orders.Edit)]
-    public async Task<OrderDetailsDto> AddItemAsync(Guid id, AddOrderItemDto input)
+    public async Task<OrderDetailsDto> AddItemAsync(
+        Guid id,
+        AddOrderItemDto input)
     {
-        var order = await GetOrderAggregateAsync(id);
+        var order =
+            await GetOrderAggregateAsync(id);
 
         await _orderManager.AddItemAsync(
             order,
@@ -125,15 +161,22 @@ public class OrderAppService : ApplicationService, IOrderAppService
             input.UnitPrice
         );
 
-        await _orderRepository.UpdateAsync(order, autoSave: true);
+        await _orderRepository.UpdateAsync(
+            order,
+            autoSave: true
+        );
 
         return await GetAsync(order.Id);
     }
 
     [Authorize(StoreManagementPermissions.Orders.Edit)]
-    public async Task<OrderDetailsDto> UpdateItemAsync(Guid id, Guid itemId, UpdateOrderItemDto input)
+    public async Task<OrderDetailsDto> UpdateItemAsync(
+        Guid id,
+        Guid itemId,
+        UpdateOrderItemDto input)
     {
-        var order = await GetOrderAggregateAsync(id);
+        var order =
+            await GetOrderAggregateAsync(id);
 
         order.UpdateItem(
             itemId,
@@ -141,43 +184,94 @@ public class OrderAppService : ApplicationService, IOrderAppService
             input.UnitPrice
         );
 
-        await _orderRepository.UpdateAsync(order, autoSave: true);
+        await _orderRepository.UpdateAsync(
+            order,
+            autoSave: true
+        );
 
         return await GetAsync(order.Id);
     }
 
     [Authorize(StoreManagementPermissions.Orders.Edit)]
-    public async Task<OrderDetailsDto> RemoveItemAsync(Guid id, Guid itemId)
+    public async Task<OrderDetailsDto> RemoveItemAsync(
+        Guid id,
+        Guid itemId)
     {
-        var order = await GetOrderAggregateAsync(id);
+        var order =
+            await GetOrderAggregateAsync(id);
 
         order.RemoveItem(itemId);
 
-        await _orderRepository.UpdateAsync(order, autoSave: true);
+        await _orderRepository.UpdateAsync(
+            order,
+            autoSave: true
+        );
 
         return await GetAsync(order.Id);
     }
 
     [Authorize(StoreManagementPermissions.Orders.Confirm)]
-    public async Task<OrderDetailsDto> ConfirmAsync(Guid id)
+    public async Task<OrderDetailsDto> ConfirmAsync(
+        Guid id)
     {
-        var order = await GetOrderAggregateAsync(id);
+        var order =
+            await GetOrderAggregateAsync(id);
 
         await _orderManager.ConfirmAsync(order);
 
-        await _orderRepository.UpdateAsync(order, autoSave: true);
+        await _orderRepository.UpdateAsync(
+            order,
+            autoSave: true
+        );
+
+        return await GetAsync(order.Id);
+    }
+
+    /*
+     * A dedicated RecordPayment permission will be added
+     * in the permissions batch.
+     *
+     * Orders.Edit is used temporarily so the project
+     * continues compiling.
+     */
+    [Authorize(StoreManagementPermissions.Orders.Edit)]
+    public async Task<OrderDetailsDto> RecordPaymentAsync(
+        Guid id,
+        RecordOrderPaymentDto input)
+    {
+        var order =
+            await GetOrderAggregateAsync(id);
+
+        _orderManager.RecordPayment(
+            order,
+            input.Amount,
+            input.PaymentMethod,
+            input.PaymentDate,
+            input.ReferenceNumber,
+            input.Note
+        );
+
+        await _orderRepository.UpdateAsync(
+            order,
+            autoSave: true
+        );
 
         return await GetAsync(order.Id);
     }
 
     [Authorize(StoreManagementPermissions.Orders.Cancel)]
-    public async Task<OrderDetailsDto> CancelAsync(Guid id)
+    public async Task<OrderDetailsDto> CancelAsync(
+        Guid id)
     {
-        var order = await GetOrderAggregateAsync(id);
+        var order =
+            await GetOrderAggregateAsync(id);
 
         await _orderManager.CancelAsync(order);
 
-        await _orderRepository.UpdateAsync(order, autoSave: true);
+        await _orderRepository.UpdateAsync(
+            order,
+            autoSave: true
+        );
 
         return await GetAsync(order.Id);
     }
@@ -185,33 +279,51 @@ public class OrderAppService : ApplicationService, IOrderAppService
     [Authorize(StoreManagementPermissions.Orders.Delete)]
     public async Task DeleteAsync(Guid id)
     {
-        var order = await GetOrderAggregateAsync(id);
+        var order =
+            await GetOrderAggregateAsync(id);
 
         if (!order.IsDraft())
         {
-            throw new BusinessException(StoreManagementDomainErrorCodes.OrderCannotBeDeleted);
+            throw new BusinessException(
+                StoreManagementDomainErrorCodes
+                    .OrderCannotBeDeleted
+            );
         }
 
-        await _orderRepository.DeleteAsync(order, autoSave: true);
+        await _orderRepository.DeleteAsync(
+            order,
+            autoSave: true
+        );
     }
 
-    private async Task<Order> GetOrderAggregateAsync(Guid id)
+    private async Task<Order> GetOrderAggregateAsync(
+        Guid id)
     {
-        var query = await _orderRepository.WithDetailsAsync(order => order.Items);
+        var query =
+            await _orderRepository.WithDetailsAsync(
+                order => order.Items,
+                order => order.Payments
+            );
 
-        var order = await AsyncExecuter.FirstOrDefaultAsync(
-            query.Where(order => order.Id == id)
-        );
+        var order =
+            await AsyncExecuter.FirstOrDefaultAsync(
+                query.Where(order => order.Id == id)
+            );
 
         if (order == null)
         {
-            throw new EntityNotFoundException(typeof(Order), id);
+            throw new EntityNotFoundException(
+                typeof(Order),
+                id
+            );
         }
 
         return order;
     }
 
-    private static IQueryable<Order> ApplyFilter(IQueryable<Order> query, string? filter)
+    private static IQueryable<Order> ApplyFilter(
+        IQueryable<Order> query,
+        string? filter)
     {
         if (string.IsNullOrWhiteSpace(filter))
         {
@@ -223,39 +335,94 @@ public class OrderAppService : ApplicationService, IOrderAppService
         return query.Where(order =>
             order.OrderNumber.Contains(normalizedFilter) ||
             order.CustomerName.Contains(normalizedFilter) ||
-            (order.CustomerPhone != null && order.CustomerPhone.Contains(normalizedFilter)) ||
-            (order.Note != null && order.Note.Contains(normalizedFilter)));
+            (
+                order.CustomerPhone != null &&
+                order.CustomerPhone.Contains(normalizedFilter)
+            ) ||
+            (
+                order.Note != null &&
+                order.Note.Contains(normalizedFilter)
+            ));
     }
 
-    private static IQueryable<Order> ApplySorting(IQueryable<Order> query, string? sorting)
+    private static IQueryable<Order> ApplySorting(
+        IQueryable<Order> query,
+        string? sorting)
     {
         if (string.IsNullOrWhiteSpace(sorting))
         {
-            return query.OrderByDescending(order => order.CreationTime);
+            return query.OrderByDescending(order =>
+                order.CreationTime
+            );
         }
 
-        return sorting.Trim().ToLowerInvariant() switch
+        return sorting
+            .Trim()
+            .ToLowerInvariant() switch
         {
-            "ordernumber" or "ordernumber asc" => query.OrderBy(order => order.OrderNumber),
-            "ordernumber desc" => query.OrderByDescending(order => order.OrderNumber),
+            "ordernumber" or "ordernumber asc" =>
+                query.OrderBy(order =>
+                    order.OrderNumber),
 
-            "customername" or "customername asc" => query.OrderBy(order => order.CustomerName),
-            "customername desc" => query.OrderByDescending(order => order.CustomerName),
+            "ordernumber desc" =>
+                query.OrderByDescending(order =>
+                    order.OrderNumber),
 
-            "status" or "status asc" => query.OrderBy(order => order.Status),
-            "status desc" => query.OrderByDescending(order => order.Status),
+            "customername" or "customername asc" =>
+                query.OrderBy(order =>
+                    order.CustomerName),
 
-            "totalamount" or "totalamount asc" => query.OrderBy(order => order.TotalAmount),
-            "totalamount desc" => query.OrderByDescending(order => order.TotalAmount),
+            "customername desc" =>
+                query.OrderByDescending(order =>
+                    order.CustomerName),
 
-            "creationtime" or "creationtime desc" => query.OrderByDescending(order => order.CreationTime),
-            "creationtime asc" => query.OrderBy(order => order.CreationTime),
+            "status" or "status asc" =>
+                query.OrderBy(order =>
+                    order.Status),
 
-            _ => query.OrderByDescending(order => order.CreationTime)
+            "status desc" =>
+                query.OrderByDescending(order =>
+                    order.Status),
+
+            "paymentstatus" or "paymentstatus asc" =>
+                query.OrderBy(order =>
+                    order.PaymentStatus),
+
+            "paymentstatus desc" =>
+                query.OrderByDescending(order =>
+                    order.PaymentStatus),
+
+            "totalamount" or "totalamount asc" =>
+                query.OrderBy(order =>
+                    order.TotalAmount),
+
+            "totalamount desc" =>
+                query.OrderByDescending(order =>
+                    order.TotalAmount),
+
+            "paidamount" or "paidamount asc" =>
+                query.OrderBy(order =>
+                    order.PaidAmount),
+
+            "paidamount desc" =>
+                query.OrderByDescending(order =>
+                    order.PaidAmount),
+
+            "creationtime" or "creationtime desc" =>
+                query.OrderByDescending(order =>
+                    order.CreationTime),
+
+            "creationtime asc" =>
+                query.OrderBy(order =>
+                    order.CreationTime),
+
+            _ => query.OrderByDescending(order =>
+                order.CreationTime)
         };
     }
 
-    private static Expression<Func<Order, OrderDto>> MapToDtoExpression()
+    private static Expression<Func<Order, OrderDto>>
+        MapToDtoExpression()
     {
         return order => new OrderDto
         {
@@ -264,23 +431,46 @@ public class OrderAppService : ApplicationService, IOrderAppService
             CustomerName = order.CustomerName,
             CustomerPhone = order.CustomerPhone,
             Note = order.Note,
+
             Status = new LookupDto
             {
                 Id = (int)order.Status,
                 Name = order.Status.ToString()
             },
+
             TotalAmount = order.TotalAmount,
+
+            PaymentStatus = new LookupDto
+            {
+                Id = (int)order.PaymentStatus,
+                Name = order.PaymentStatus.ToString()
+            },
+
+            PaidAmount = order.PaidAmount,
+
+            RemainingAmount =
+                order.TotalAmount > order.PaidAmount
+                    ? order.TotalAmount -
+                      order.PaidAmount
+                    : 0m,
+
             CreationTime = order.CreationTime,
             CreatorId = order.CreatorId,
-            LastModificationTime = order.LastModificationTime,
-            LastModifierId = order.LastModifierId,
+
+            LastModificationTime =
+                order.LastModificationTime,
+
+            LastModifierId =
+                order.LastModifierId,
+
             IsDeleted = order.IsDeleted,
             DeleterId = order.DeleterId,
             DeletionTime = order.DeletionTime
         };
     }
 
-    private static Expression<Func<Order, OrderDetailsDto>> MapToDetailsDtoExpression()
+    private static Expression<Func<Order, OrderDetailsDto>>
+        MapToDetailsDtoExpression()
     {
         return order => new OrderDetailsDto
         {
@@ -289,41 +479,123 @@ public class OrderAppService : ApplicationService, IOrderAppService
             CustomerName = order.CustomerName,
             CustomerPhone = order.CustomerPhone,
             Note = order.Note,
+
             Status = new LookupDto
             {
                 Id = (int)order.Status,
                 Name = order.Status.ToString()
             },
+
             TotalAmount = order.TotalAmount,
+
+            PaymentStatus = new LookupDto
+            {
+                Id = (int)order.PaymentStatus,
+                Name = order.PaymentStatus.ToString()
+            },
+
+            PaidAmount = order.PaidAmount,
+
+            RemainingAmount =
+                order.TotalAmount > order.PaidAmount
+                    ? order.TotalAmount -
+                      order.PaidAmount
+                    : 0m,
+
             Items = order.Items
                 .OrderBy(item => item.CreationTime)
                 .Select(item => new OrderItemDto
                 {
                     Id = item.Id,
                     OrderId = item.OrderId,
-                    ProductVariantId = item.ProductVariantId,
-                    ProductName = item.ProductName,
+
+                    ProductVariantId =
+                        item.ProductVariantId,
+
+                    ProductName =
+                        item.ProductName,
+
                     Color = item.Color,
                     Size = item.Size,
                     Quantity = item.Quantity,
                     UnitPrice = item.UnitPrice,
                     LineTotal = item.LineTotal,
-                    CreationTime = item.CreationTime,
-                    CreatorId = item.CreatorId,
-                    LastModificationTime = item.LastModificationTime,
-                    LastModifierId = item.LastModifierId,
-                    IsDeleted = item.IsDeleted,
-                    DeleterId = item.DeleterId,
-                    DeletionTime = item.DeletionTime
+
+                    CreationTime =
+                        item.CreationTime,
+
+                    CreatorId =
+                        item.CreatorId,
+
+                    LastModificationTime =
+                        item.LastModificationTime,
+
+                    LastModifierId =
+                        item.LastModifierId,
+
+                    IsDeleted =
+                        item.IsDeleted,
+
+                    DeleterId =
+                        item.DeleterId,
+
+                    DeletionTime =
+                        item.DeletionTime
                 })
                 .ToList(),
+
+            Payments = order.Payments
+                .OrderBy(payment =>
+                    payment.PaymentDate)
+                .ThenBy(payment =>
+                    payment.CreationTime)
+                .Select(payment =>
+                    new OrderPaymentDto
+                    {
+                        Id = payment.Id,
+                        OrderId = payment.OrderId,
+                        Amount = payment.Amount,
+
+                        PaymentMethod = new LookupDto
+                        {
+                            Id =
+                                (int)payment.PaymentMethod,
+
+                            Name =
+                                payment.PaymentMethod
+                                    .ToString()
+                        },
+
+                        PaymentDate =
+                            payment.PaymentDate,
+
+                        ReferenceNumber =
+                            payment.ReferenceNumber,
+
+                        Note =
+                            payment.Note,
+
+                        CreationTime =
+                            payment.CreationTime,
+
+                        CreatorId =
+                            payment.CreatorId
+                    })
+                .ToList(),
+
             CreationTime = order.CreationTime,
             CreatorId = order.CreatorId,
-            LastModificationTime = order.LastModificationTime,
-            LastModifierId = order.LastModifierId,
+
+            LastModificationTime =
+                order.LastModificationTime,
+
+            LastModifierId =
+                order.LastModifierId,
+
             IsDeleted = order.IsDeleted,
             DeleterId = order.DeleterId,
             DeletionTime = order.DeletionTime
         };
     }
 }
+ 

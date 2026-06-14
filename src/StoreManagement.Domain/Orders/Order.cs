@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using Volo.Abp;
-using Volo.Abp.Domain.Entities.Auditing;
 using Volo.Abp.Domain.Entities;
+using Volo.Abp.Domain.Entities.Auditing;
+
 namespace StoreManagement.Orders;
 
 public class Order : FullAuditedAggregateRoot<Guid>
@@ -21,9 +23,25 @@ public class Order : FullAuditedAggregateRoot<Guid>
 
     public decimal TotalAmount { get; private set; }
 
+    public OrderPaymentStatus PaymentStatus { get; private set; }
+
+    public decimal PaidAmount { get; private set; }
+
+    [NotMapped]
+    public decimal RemainingAmount =>
+        TotalAmount > PaidAmount
+            ? TotalAmount - PaidAmount
+            : 0m;
+
     private readonly List<OrderItem> _items = new();
 
-    public IReadOnlyCollection<OrderItem> Items => new ReadOnlyCollection<OrderItem>(_items);
+    public IReadOnlyCollection<OrderItem> Items =>
+        new ReadOnlyCollection<OrderItem>(_items);
+
+    private readonly List<OrderPayment> _payments = new();
+
+    public IReadOnlyCollection<OrderPayment> Payments =>
+        new ReadOnlyCollection<OrderPayment>(_payments);
 
     protected Order()
     {
@@ -43,7 +61,10 @@ public class Order : FullAuditedAggregateRoot<Guid>
         SetNote(note);
 
         Status = OrderStatus.Draft;
-        TotalAmount = 0;
+        TotalAmount = 0m;
+
+        PaymentStatus = OrderPaymentStatus.Unpaid;
+        PaidAmount = 0m;
     }
 
     public void SetOrderNumber(string orderNumber)
@@ -108,7 +129,9 @@ public class Order : FullAuditedAggregateRoot<Guid>
 
         if (productVariantId == Guid.Empty)
         {
-            throw new BusinessException(StoreManagementDomainErrorCodes.OrderProductVariantNotFound);
+            throw new BusinessException(
+                StoreManagementDomainErrorCodes.OrderProductVariantNotFound
+            );
         }
 
         var existingItem = _items.FirstOrDefault(item =>
@@ -118,7 +141,9 @@ public class Order : FullAuditedAggregateRoot<Guid>
 
         if (existingItem != null)
         {
-            existingItem.ChangeQuantity(existingItem.Quantity + quantity);
+            existingItem.ChangeQuantity(
+                existingItem.Quantity + quantity
+            );
         }
         else
         {
@@ -146,11 +171,16 @@ public class Order : FullAuditedAggregateRoot<Guid>
     {
         EnsureDraft();
 
-        var item = _items.FirstOrDefault(item => item.Id == orderItemId);
+        var item = _items.FirstOrDefault(item =>
+            item.Id == orderItemId
+        );
 
         if (item == null)
         {
-            throw new EntityNotFoundException(typeof(OrderItem), orderItemId);
+            throw new EntityNotFoundException(
+                typeof(OrderItem),
+                orderItemId
+            );
         }
 
         item.ChangeQuantity(quantity);
@@ -163,11 +193,16 @@ public class Order : FullAuditedAggregateRoot<Guid>
     {
         EnsureDraft();
 
-        var item = _items.FirstOrDefault(item => item.Id == orderItemId);
+        var item = _items.FirstOrDefault(item =>
+            item.Id == orderItemId
+        );
 
         if (item == null)
         {
-            throw new EntityNotFoundException(typeof(OrderItem), orderItemId);
+            throw new EntityNotFoundException(
+                typeof(OrderItem),
+                orderItemId
+            );
         }
 
         _items.Remove(item);
@@ -179,22 +214,108 @@ public class Order : FullAuditedAggregateRoot<Guid>
     {
         if (Status != OrderStatus.Draft)
         {
-            throw new BusinessException(StoreManagementDomainErrorCodes.OrderCannotBeConfirmed);
+            throw new BusinessException(
+                StoreManagementDomainErrorCodes.OrderCannotBeConfirmed
+            );
         }
 
         if (_items.Count == 0)
         {
-            throw new BusinessException(StoreManagementDomainErrorCodes.OrderItemRequired);
+            throw new BusinessException(
+                StoreManagementDomainErrorCodes.OrderItemRequired
+            );
         }
 
         Status = OrderStatus.Confirmed;
+    }
+
+    public OrderPayment RecordPayment(
+        Guid paymentId,
+        decimal amount,
+        PaymentMethod paymentMethod,
+        DateTime paymentDate,
+        string? referenceNumber,
+        string? note)
+    {
+        if (Status != OrderStatus.Confirmed)
+        {
+            throw new BusinessException(
+                "StoreManagement:OrderPaymentRequiresConfirmedOrder"
+            );
+        }
+
+        if (paymentId == Guid.Empty)
+        {
+            throw new BusinessException(
+                "StoreManagement:OrderPaymentIdInvalid"
+            );
+        }
+
+        if (amount <= 0)
+        {
+            throw new BusinessException(
+                "StoreManagement:OrderPaymentAmountInvalid"
+            );
+        }
+
+        if (decimal.Round(amount, 2) != amount)
+        {
+            throw new BusinessException(
+                "StoreManagement:OrderPaymentDecimalPlacesInvalid"
+            );
+        }
+
+        if (!Enum.IsDefined(typeof(PaymentMethod), paymentMethod))
+        {
+            throw new BusinessException(
+                "StoreManagement:OrderPaymentMethodInvalid"
+            );
+        }
+
+        if (amount > RemainingAmount)
+        {
+            throw new BusinessException(
+                    "StoreManagement:OrderPaymentExceedsRemainingAmount"
+                )
+                .WithData("TotalAmount", TotalAmount)
+                .WithData("PaidAmount", PaidAmount)
+                .WithData("RemainingAmount", RemainingAmount)
+                .WithData("PaymentAmount", amount);
+        }
+
+        var payment = new OrderPayment(
+            paymentId,
+            Id,
+            amount,
+            paymentMethod,
+            paymentDate,
+            referenceNumber,
+            note
+        );
+
+        _payments.Add(payment);
+
+        PaidAmount += amount;
+
+        RecalculatePaymentStatus();
+
+        return payment;
     }
 
     public void Cancel()
     {
         if (Status == OrderStatus.Cancelled)
         {
-            throw new BusinessException(StoreManagementDomainErrorCodes.OrderCannotBeCancelled);
+            throw new BusinessException(
+                StoreManagementDomainErrorCodes.OrderCannotBeCancelled
+            );
+        }
+
+        if (PaidAmount > 0)
+        {
+            throw new BusinessException(
+                "StoreManagement:PaidOrderCannotBeCancelled"
+            );
         }
 
         Status = OrderStatus.Cancelled;
@@ -214,13 +335,28 @@ public class Order : FullAuditedAggregateRoot<Guid>
     {
         if (Status != OrderStatus.Draft)
         {
-            throw new BusinessException(StoreManagementDomainErrorCodes.OrderCannotBeUpdated);
+            throw new BusinessException(
+                StoreManagementDomainErrorCodes.OrderCannotBeUpdated
+            );
         }
     }
 
     private void RecalculateTotal()
     {
         TotalAmount = _items.Sum(item => item.LineTotal);
+    }
+
+    private void RecalculatePaymentStatus()
+    {
+        if (PaidAmount <= 0)
+        {
+            PaymentStatus = OrderPaymentStatus.Unpaid;
+            return;
+        }
+
+        PaymentStatus = PaidAmount >= TotalAmount
+            ? OrderPaymentStatus.Paid
+            : OrderPaymentStatus.PartiallyPaid;
     }
 
     private static string NormalizeRequiredText(
@@ -239,7 +375,9 @@ public class Order : FullAuditedAggregateRoot<Guid>
 
         if (normalizedValue.Length > maxLength)
         {
-            throw new BusinessException(StoreManagementDomainErrorCodes.OrderTextTooLong)
+            throw new BusinessException(
+                    StoreManagementDomainErrorCodes.OrderTextTooLong
+                )
                 .WithData("PropertyName", propertyName)
                 .WithData("MaxLength", maxLength);
         }
@@ -261,7 +399,9 @@ public class Order : FullAuditedAggregateRoot<Guid>
 
         if (normalizedValue.Length > maxLength)
         {
-            throw new BusinessException(StoreManagementDomainErrorCodes.OrderTextTooLong)
+            throw new BusinessException(
+                    StoreManagementDomainErrorCodes.OrderTextTooLong
+                )
                 .WithData("PropertyName", propertyName)
                 .WithData("MaxLength", maxLength);
         }

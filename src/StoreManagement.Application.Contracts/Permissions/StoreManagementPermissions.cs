@@ -45,5 +45,6 @@ public static class StoreManagementPermissions
         public const string Delete = Default + ".Delete";
         public const string Confirm = Default + ".Confirm";
         public const string Cancel = Default + ".Cancel";
+        public const string RecordPayment = Default + ".RecordPayment";
     }
 }

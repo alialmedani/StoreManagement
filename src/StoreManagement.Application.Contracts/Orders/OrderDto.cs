@@ -17,4 +17,10 @@ public class OrderDto : FullAuditedEntityDto<Guid>
     public LookupDto Status { get; set; } = new();
 
     public decimal TotalAmount { get; set; }
+
+    public LookupDto PaymentStatus { get; set; } = new();
+
+    public decimal PaidAmount { get; set; }
+
+    public decimal RemainingAmount { get; set; }
 }

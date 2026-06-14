@@ -5,13 +5,11 @@ using StoreManagement.Common;
 
 namespace StoreManagement.Orders;
 
-public class OrderPagedRequestDto :
+public class OrderPaymentPagedRequestDto :
     StoreManagementPagedAndSortedResultRequestDto,
     IValidatableObject
 {
-    public OrderStatus? Status { get; set; }
-
-    public OrderPaymentStatus? PaymentStatus { get; set; }
+    public PaymentMethod? PaymentMethod { get; set; }
 
     public DateTime? FromDate { get; set; }
 
