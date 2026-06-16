@@ -5,6 +5,7 @@ using StoreManagement.Inventory;
 using StoreManagement.Products;
 using StoreManagement.Settings;
 using Volo.Abp;
+using Volo.Abp.Domain.Entities;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Domain.Services;
 using Volo.Abp.Linq;
@@ -76,10 +77,10 @@ public class OrderManager : DomainService
                 defaultValue: false
             );
 
-        var existingQuantity = order.Items
+        long existingQuantity = order.Items
             .Where(item =>
                 item.ProductVariantId == productVariantId)
-            .Sum(item => item.Quantity);
+            .Sum(item => (long)item.Quantity);
 
         var requiredQuantity =
             existingQuantity + quantity;
@@ -103,6 +104,59 @@ public class OrderManager : DomainService
         );
     }
 
+    public async Task UpdateItemAsync(
+        Order order,
+        Guid orderItemId,
+        int quantity)
+    {
+        var orderItem = order.Items.FirstOrDefault(item =>
+            item.Id == orderItemId
+        );
+
+        if (orderItem == null)
+        {
+            throw new EntityNotFoundException(
+                typeof(OrderItem),
+                orderItemId
+            );
+        }
+
+        var variantInfo =
+            await GetAvailableProductVariantInfoAsync(
+                orderItem.ProductVariantId
+            );
+
+        var allowNegativeStock =
+            await IsSettingEnabledAsync(
+                StoreManagementSettings.AllowNegativeStock,
+                defaultValue: false
+            );
+
+        long otherQuantityForSameVariant = order.Items
+            .Where(item =>
+                item.ProductVariantId ==
+                orderItem.ProductVariantId &&
+                item.Id != orderItemId)
+            .Sum(item => (long)item.Quantity);
+
+        var requiredQuantity =
+            otherQuantityForSameVariant + quantity;
+
+        if (!allowNegativeStock &&
+            variantInfo.StockQuantity < requiredQuantity)
+        {
+            throw new BusinessException(
+                StoreManagementDomainErrorCodes
+                    .OrderInsufficientStock
+            );
+        }
+
+        order.UpdateItem(
+            orderItemId,
+            quantity
+        );
+    }
+
     public async Task ConfirmAsync(Order order)
     {
         var allowNegativeStock =
@@ -111,15 +165,26 @@ public class OrderManager : DomainService
                 defaultValue: false
             );
 
-        foreach (var item in order.Items)
+        var quantityByVariant = order.Items
+            .GroupBy(item => item.ProductVariantId)
+            .Select(group => new
+            {
+                ProductVariantId = group.Key,
+                Quantity = group.Sum(item =>
+                    (long)item.Quantity)
+            })
+            .ToList();
+
+        foreach (var itemGroup in quantityByVariant)
         {
             var variantInfo =
                 await GetAvailableProductVariantInfoAsync(
-                    item.ProductVariantId
+                    itemGroup.ProductVariantId
                 );
 
             if (!allowNegativeStock &&
-                variantInfo.StockQuantity < item.Quantity)
+                variantInfo.StockQuantity <
+                itemGroup.Quantity)
             {
                 throw new BusinessException(
                     StoreManagementDomainErrorCodes

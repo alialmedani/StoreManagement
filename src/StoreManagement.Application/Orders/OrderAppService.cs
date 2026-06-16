@@ -203,7 +203,8 @@ public async Task<OrderDetailsDto> UpdateItemAsync(
     var order =
         await GetOrderAggregateAsync(id);
 
-    order.UpdateItem(
+    await _orderManager.UpdateItemAsync(
+        order,
         itemId,
         input.Quantity
     );
