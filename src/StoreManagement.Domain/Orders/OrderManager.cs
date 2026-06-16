@@ -1,4 +1,4 @@
- using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using StoreManagement.Inventory;
@@ -63,8 +63,7 @@ public class OrderManager : DomainService
     public async Task AddItemAsync(
         Order order,
         Guid productVariantId,
-        int quantity,
-        decimal unitPrice)
+        int quantity)
     {
         var variantInfo =
             await GetAvailableProductVariantInfoAsync(
@@ -77,15 +76,9 @@ public class OrderManager : DomainService
                 defaultValue: false
             );
 
-        /*
-         * The order may already contain the same variant and price.
-         * Validate the final requested quantity, not only the new
-         * quantity being added.
-         */
         var existingQuantity = order.Items
             .Where(item =>
-                item.ProductVariantId == productVariantId &&
-                item.UnitPrice == unitPrice)
+                item.ProductVariantId == productVariantId)
             .Sum(item => item.Quantity);
 
         var requiredQuantity =
@@ -106,7 +99,7 @@ public class OrderManager : DomainService
             variantInfo.Color,
             variantInfo.Size,
             quantity,
-            unitPrice
+            variantInfo.Price
         );
     }
 
@@ -191,10 +184,6 @@ public class OrderManager : DomainService
             }
         }
 
-        /*
-         * Order.Cancel() also rejects cancellation when
-         * PaidAmount is greater than zero.
-         */
         order.Cancel();
 
         if (!wasConfirmed)
@@ -320,6 +309,7 @@ public class OrderManager : DomainService
                             variant.Color,
                             variant.Size,
                             variant.StockQuantity,
+                            variant.Product.Price,
                             variant.IsActive,
                             variant.Product.IsActive,
                             variant.Product.Category.IsActive
@@ -386,9 +376,9 @@ public class OrderManager : DomainService
         string Color,
         string Size,
         int StockQuantity,
+        decimal Price,
         bool IsActive,
         bool ProductIsActive,
         bool CategoryIsActive
     );
 }
- 

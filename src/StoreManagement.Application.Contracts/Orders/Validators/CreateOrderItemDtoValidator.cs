@@ -13,9 +13,5 @@ public class CreateOrderItemDtoValidator : AbstractValidator<CreateOrderItemDto>
         RuleFor(input => input.Quantity)
             .GreaterThan(0)
             .WithMessage("Quantity must be greater than zero.");
-
-        RuleFor(input => input.UnitPrice)
-            .GreaterThanOrEqualTo(0)
-            .WithMessage("Unit price cannot be negative.");
     }
 }

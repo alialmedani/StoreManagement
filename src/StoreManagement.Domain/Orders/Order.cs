@@ -166,8 +166,7 @@ public class Order : FullAuditedAggregateRoot<Guid>
 
     public void UpdateItem(
         Guid orderItemId,
-        int quantity,
-        decimal unitPrice)
+        int quantity)
     {
         EnsureDraft();
 
@@ -184,7 +183,6 @@ public class Order : FullAuditedAggregateRoot<Guid>
         }
 
         item.ChangeQuantity(quantity);
-        item.ChangeUnitPrice(unitPrice);
 
         RecalculateTotal();
     }

@@ -138,8 +138,7 @@ public async Task<OrderDetailsDto> CreateAsync(
         await _orderManager.AddItemAsync(
             order,
             item.ProductVariantId,
-            item.Quantity,
-            item.UnitPrice
+            item.Quantity
         );
     }
 
@@ -184,8 +183,7 @@ public async Task<OrderDetailsDto> AddItemAsync(
     await _orderManager.AddItemAsync(
         order,
         input.ProductVariantId,
-        input.Quantity,
-        input.UnitPrice
+        input.Quantity
     );
 
     await _orderRepository.UpdateAsync(
@@ -207,8 +205,7 @@ public async Task<OrderDetailsDto> UpdateItemAsync(
 
     order.UpdateItem(
         itemId,
-        input.Quantity,
-        input.UnitPrice
+        input.Quantity
     );
 
     await _orderRepository.UpdateAsync(
@@ -619,6 +616,4 @@ private static Expression<Func<Order, OrderDetailsDto>>
         DeletionTime = order.DeletionTime
     };
 }
- 
-
 }
