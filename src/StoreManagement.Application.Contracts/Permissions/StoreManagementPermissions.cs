@@ -47,4 +47,12 @@ public static class StoreManagementPermissions
         public const string Cancel = Default + ".Cancel";
         public const string RecordPayment = Default + ".RecordPayment";
     }
+
+    public static class File
+    {
+        public const string Default = GroupName + ".File";
+        public const string Upload = Default + ".Upload";
+        public const string Download = Default + ".Download";
+        public const string Delete = Default + ".Delete";
+    }
 }

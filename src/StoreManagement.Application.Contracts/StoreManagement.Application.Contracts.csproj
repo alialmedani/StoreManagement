@@ -11,7 +11,11 @@
   <ItemGroup>
     <ProjectReference Include="..\StoreManagement.Domain.Shared\StoreManagement.Domain.Shared.csproj" />
   </ItemGroup>
-  
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Volo.Abp.FluentValidation" Version="10.4.1" />
     <PackageReference Include="Volo.Abp.PermissionManagement.Application.Contracts" Version="10.4.0" />
@@ -21,7 +25,7 @@
     <PackageReference Include="Volo.Abp.Account.Application.Contracts" Version="10.4.0" />
     <PackageReference Include="Volo.Abp.TenantManagement.Application.Contracts" Version="10.4.0" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <Folder Include="Inventory\Validators\" />
   </ItemGroup>

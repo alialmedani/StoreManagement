@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using StoreManagement.Categories;
 using StoreManagement.Inventory;
+using StoreManagement.Media;
 using StoreManagement.Orders;
 using StoreManagement.Products;
 using Volo.Abp.AuditLogging.EntityFrameworkCore;
@@ -48,6 +49,8 @@ public DbSet<OrderItem> OrderItems { get; set; }
 public DbSet<OrderPayment> OrderPayments { get; set; }
 
 public DbSet<OrderNumberSequence> OrderNumberSequences { get; set; }
+
+public DbSet<Media.Media> Media { get; set; }
 
 #region Entities from the modules
 
@@ -100,6 +103,72 @@ protected override void OnModelCreating(ModelBuilder builder)
     /*
      * Configure your own tables/entities inside here.
      */
+
+    builder.Entity<Media.Media>(b =>
+    {
+        b.ToTable(
+            StoreManagementConsts.DbTablePrefix + "Media",
+            StoreManagementConsts.DbSchema
+        );
+
+        b.ConfigureByConvention();
+
+        b.Property(media => media.EntityId)
+            .IsRequired()
+            .HasMaxLength(MediaConsts.MaxEntityIdLength);
+
+        b.Property(media => media.EntityType)
+            .IsRequired();
+
+        b.Property(media => media.FilePlacement)
+            .IsRequired()
+            .HasMaxLength(MediaConsts.MaxFilePlacementLength);
+
+        b.Property(media => media.FileName)
+            .IsRequired()
+            .HasMaxLength(MediaConsts.MaxFileNameLength);
+
+        b.Property(media => media.OriginalFileName)
+            .IsRequired()
+            .HasMaxLength(MediaConsts.MaxFileNameLength);
+
+        b.Property(media => media.BlobName)
+            .IsRequired()
+            .HasMaxLength(MediaConsts.MaxFileNameLength);
+
+        b.Property(media => media.ContentType)
+            .IsRequired()
+            .HasMaxLength(MediaConsts.MaxContentTypeLength);
+
+        b.Property(media => media.Size)
+            .IsRequired();
+
+        b.HasIndex(media => new
+            {
+                media.EntityType,
+                media.EntityId
+            })
+            .HasDatabaseName(
+                "IX_StoreManagement_Media_EntityType_EntityId"
+            );
+
+        b.HasIndex(media => media.FileName)
+            .HasDatabaseName(
+                "IX_StoreManagement_Media_FileName"
+            );
+
+        b.HasIndex(media => media.BlobName)
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0")
+            .HasDatabaseName(
+                "UX_StoreManagement_Media_BlobName_Active"
+            );
+
+        b.HasIndex(media => media.CreationTime)
+            .HasDatabaseName(
+                "IX_StoreManagement_Media_CreationTime"
+            );
+    });
 
     builder.Entity<OrderNumberSequence>(b =>
     {

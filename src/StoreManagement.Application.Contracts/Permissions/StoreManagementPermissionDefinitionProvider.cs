@@ -139,6 +139,27 @@ public class StoreManagementPermissionDefinitionProvider
             StoreManagementPermissions.Orders.RecordPayment,
             L("Permission:Orders.RecordPayment")
         );
+
+        var filePermission =
+            storeManagementGroup.AddPermission(
+                StoreManagementPermissions.File.Default,
+                L("Permission:File")
+            );
+
+        filePermission.AddChild(
+            StoreManagementPermissions.File.Upload,
+            L("Permission:File.Upload")
+        );
+
+        filePermission.AddChild(
+            StoreManagementPermissions.File.Download,
+            L("Permission:File.Download")
+        );
+
+        filePermission.AddChild(
+            StoreManagementPermissions.File.Delete,
+            L("Permission:File.Delete")
+        );
     }
 
     private static LocalizableString L(string name)
