@@ -217,6 +217,14 @@ public class StoreManagementWebModule : AbpModule
             options.Map(StoreManagementDomainErrorCodes.OrderCannotBeUpdated, HttpStatusCode.Conflict);
             options.Map(StoreManagementDomainErrorCodes.OrderCannotBeDeleted, HttpStatusCode.Conflict);
             options.Map(StoreManagementDomainErrorCodes.OrderInsufficientStock, HttpStatusCode.Conflict);
+            options.Map("StoreManagement:OrderPaymentRequiresConfirmedOrder", HttpStatusCode.Conflict);
+            options.Map("StoreManagement:OrderPaymentIdInvalid", HttpStatusCode.BadRequest);
+            options.Map("StoreManagement:OrderPaymentAmountInvalid", HttpStatusCode.BadRequest);
+            options.Map("StoreManagement:OrderPaymentDecimalPlacesInvalid", HttpStatusCode.BadRequest);
+            options.Map("StoreManagement:OrderPaymentMethodInvalid", HttpStatusCode.BadRequest);
+            options.Map("StoreManagement:OrderPaymentTextTooLong", HttpStatusCode.BadRequest);
+            options.Map("StoreManagement:OrderPaymentExceedsRemainingAmount", HttpStatusCode.BadRequest);
+            options.Map("StoreManagement:PaidOrderCannotBeCancelled", HttpStatusCode.Conflict);
         });
     }
 
