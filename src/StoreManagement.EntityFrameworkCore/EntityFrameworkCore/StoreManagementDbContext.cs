@@ -365,6 +365,11 @@ protected override void OnModelCreating(ModelBuilder builder)
         b.Property(order => order.Note)
             .HasMaxLength(OrderConsts.MaxNoteLength);
 
+        b.Property(order => order.CancellationReason)
+            .HasMaxLength(OrderConsts.MaxNoteLength);
+
+        b.Property(order => order.CancellationTime);
+
         b.Property(order => order.Status)
             .IsRequired();
 
@@ -412,6 +417,11 @@ protected override void OnModelCreating(ModelBuilder builder)
         b.HasIndex(order => order.PaymentStatus)
             .HasDatabaseName(
                 "IX_StoreManagement_Orders_PaymentStatus"
+            );
+
+        b.HasIndex(order => order.CancellationTime)
+            .HasDatabaseName(
+                "IX_StoreManagement_Orders_CancellationTime"
             );
 
         b.HasIndex(order => order.CreationTime)

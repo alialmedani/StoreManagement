@@ -227,7 +227,9 @@ public class OrderManager : DomainService
         );
     }
 
-    public async Task CancelAsync(Order order)
+    public async Task CancelAsync(
+        Order order,
+        string cancellationReason)
     {
         var wasConfirmed = order.IsConfirmed();
 
@@ -249,7 +251,10 @@ public class OrderManager : DomainService
             }
         }
 
-        order.Cancel();
+        order.Cancel(
+            cancellationReason,
+            Clock.Now
+        );
 
         if (!wasConfirmed)
         {

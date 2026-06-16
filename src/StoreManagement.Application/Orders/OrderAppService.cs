@@ -281,12 +281,16 @@ public async Task<OrderDetailsDto> RecordPaymentAsync(
 
 [Authorize(StoreManagementPermissions.Orders.Cancel)]
 public async Task<OrderDetailsDto> CancelAsync(
-    Guid id)
+    Guid id,
+    CancelOrderDto input)
 {
     var order =
         await GetOrderAggregateAsync(id);
 
-    await _orderManager.CancelAsync(order);
+    await _orderManager.CancelAsync(
+        order,
+        input.CancellationReason
+    );
 
     await _orderRepository.UpdateAsync(
         order,
@@ -362,6 +366,10 @@ private static IQueryable<Order> ApplyFilter(
         (
             order.Note != null &&
             order.Note.Contains(normalizedFilter)
+        ) ||
+        (
+            order.CancellationReason != null &&
+            order.CancellationReason.Contains(normalizedFilter)
         ));
 }
 
@@ -428,6 +436,14 @@ private static IQueryable<Order> ApplySorting(
             query.OrderByDescending(order =>
                 order.PaidAmount),
 
+        "cancellationtime" or "cancellationtime asc" =>
+            query.OrderBy(order =>
+                order.CancellationTime),
+
+        "cancellationtime desc" =>
+            query.OrderByDescending(order =>
+                order.CancellationTime),
+
         "creationtime" or "creationtime desc" =>
             query.OrderByDescending(order =>
                 order.CreationTime),
@@ -469,10 +485,18 @@ private static Expression<Func<Order, OrderDto>>
         PaidAmount = order.PaidAmount,
 
         RemainingAmount =
-            order.TotalAmount > order.PaidAmount
-                ? order.TotalAmount -
-                  order.PaidAmount
-                : 0m,
+            order.Status == OrderStatus.Cancelled
+                ? 0m
+                : order.TotalAmount > order.PaidAmount
+                    ? order.TotalAmount -
+                      order.PaidAmount
+                    : 0m,
+
+        CancellationReason =
+            order.CancellationReason,
+
+        CancellationTime =
+            order.CancellationTime,
 
         CreationTime = order.CreationTime,
         CreatorId = order.CreatorId,
@@ -517,10 +541,18 @@ private static Expression<Func<Order, OrderDetailsDto>>
         PaidAmount = order.PaidAmount,
 
         RemainingAmount =
-            order.TotalAmount > order.PaidAmount
-                ? order.TotalAmount -
-                  order.PaidAmount
-                : 0m,
+            order.Status == OrderStatus.Cancelled
+                ? 0m
+                : order.TotalAmount > order.PaidAmount
+                    ? order.TotalAmount -
+                      order.PaidAmount
+                    : 0m,
+
+        CancellationReason =
+            order.CancellationReason,
+
+        CancellationTime =
+            order.CancellationTime,
 
         Items = order.Items
             .OrderBy(item => item.CreationTime)

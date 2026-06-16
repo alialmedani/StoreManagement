@@ -23,4 +23,8 @@ public class OrderDto : FullAuditedEntityDto<Guid>
     public decimal PaidAmount { get; set; }
 
     public decimal RemainingAmount { get; set; }
+
+    public string? CancellationReason { get; set; }
+
+    public DateTime? CancellationTime { get; set; }
 }

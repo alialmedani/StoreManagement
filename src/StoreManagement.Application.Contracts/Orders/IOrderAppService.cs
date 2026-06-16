@@ -1,4 +1,4 @@
- using System;
+using System;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Dtos;
 using Volo.Abp.Application.Services;
@@ -45,8 +45,10 @@ public interface IOrderAppService : IApplicationService
         RecordOrderPaymentDto input
     );
 
-    Task<OrderDetailsDto> CancelAsync(Guid id);
+    Task<OrderDetailsDto> CancelAsync(
+        Guid id,
+        CancelOrderDto input
+    );
 
     Task DeleteAsync(Guid id);
 }
- 

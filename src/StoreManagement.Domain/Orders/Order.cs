@@ -27,11 +27,17 @@ public class Order : FullAuditedAggregateRoot<Guid>
 
     public decimal PaidAmount { get; private set; }
 
+    public string? CancellationReason { get; private set; }
+
+    public DateTime? CancellationTime { get; private set; }
+
     [NotMapped]
     public decimal RemainingAmount =>
-        TotalAmount > PaidAmount
-            ? TotalAmount - PaidAmount
-            : 0m;
+        Status == OrderStatus.Cancelled
+            ? 0m
+            : TotalAmount > PaidAmount
+                ? TotalAmount - PaidAmount
+                : 0m;
 
     private readonly List<OrderItem> _items = new();
 
@@ -300,7 +306,9 @@ public class Order : FullAuditedAggregateRoot<Guid>
         return payment;
     }
 
-    public void Cancel()
+    public void Cancel(
+        string cancellationReason,
+        DateTime cancellationTime)
     {
         if (Status == OrderStatus.Cancelled)
         {
@@ -316,6 +324,14 @@ public class Order : FullAuditedAggregateRoot<Guid>
             );
         }
 
+        CancellationReason = NormalizeRequiredText(
+            cancellationReason,
+            nameof(CancellationReason),
+            OrderConsts.MaxNoteLength,
+            StoreManagementDomainErrorCodes.OrderTextTooLong
+        );
+
+        CancellationTime = cancellationTime;
         Status = OrderStatus.Cancelled;
     }
 
