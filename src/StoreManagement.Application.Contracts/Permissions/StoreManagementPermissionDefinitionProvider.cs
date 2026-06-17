@@ -160,6 +160,22 @@ public class StoreManagementPermissionDefinitionProvider
             StoreManagementPermissions.File.Delete,
             L("Permission:File.Delete")
         );
+
+        var claimManagementPermission =
+            storeManagementGroup.AddPermission(
+                StoreManagementPermissions.ClaimManagement.Default,
+                L("Permission:ClaimManagement")
+            );
+
+        claimManagementPermission.AddChild(
+            StoreManagementPermissions.ClaimManagement.View,
+            L("Permission:ClaimManagement.View")
+        );
+
+        claimManagementPermission.AddChild(
+            StoreManagementPermissions.ClaimManagement.Manage,
+            L("Permission:ClaimManagement.Manage")
+        );
     }
 
     private static LocalizableString L(string name)

@@ -55,4 +55,11 @@ public static class StoreManagementPermissions
         public const string Download = Default + ".Download";
         public const string Delete = Default + ".Delete";
     }
+
+    public static class ClaimManagement
+    {
+        public const string Default = GroupName + ".ClaimManagement";
+        public const string View = Default + ".View";
+        public const string Manage = Default + ".Manage";
+    }
 }
