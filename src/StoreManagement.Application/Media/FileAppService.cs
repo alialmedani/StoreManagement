@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using StoreManagement.Permissions;
 using Volo.Abp;
 using Volo.Abp.Application.Services;
@@ -31,8 +32,9 @@ public class FileAppService :
     }
 
     [Authorize(StoreManagementPermissions.File.Upload)]
+    [Consumes("multipart/form-data")]
     public async Task<MediaDto> UploadAsync(
-        UploadMediaDto input)
+        [FromForm] UploadMediaDto input)
     {
         if (input.File == null)
         {
