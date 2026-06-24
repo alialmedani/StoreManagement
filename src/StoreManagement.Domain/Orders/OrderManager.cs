@@ -41,6 +41,7 @@ public class OrderManager : DomainService
 
     public async Task<Order> CreateAsync(
         string customerName,
+        string customerAddress,
         string? customerPhone,
         string? note)
     {
@@ -56,6 +57,7 @@ public class OrderManager : DomainService
             GuidGenerator.Create(),
             orderNumber,
             customerName,
+            customerAddress,
             customerPhone,
             note
         );

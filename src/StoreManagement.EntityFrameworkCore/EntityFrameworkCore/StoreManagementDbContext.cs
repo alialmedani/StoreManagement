@@ -427,7 +427,9 @@ protected override void OnModelCreating(ModelBuilder builder)
         b.Property(order => order.CustomerName)
             .IsRequired()
             .HasMaxLength(OrderConsts.MaxCustomerNameLength);
-
+        b.Property(order => order.CustomerAddress)
+            .IsRequired()
+            .HasMaxLength(OrderConsts.MaxCustomerAddressLength);
         b.Property(order => order.CustomerPhone)
             .HasMaxLength(OrderConsts.MaxCustomerPhoneLength);
 

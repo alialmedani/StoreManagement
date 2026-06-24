@@ -13,7 +13,11 @@ public class CreateOrderDto
     [Required]
     [MaxLength(OrderConsts.MaxCustomerNameLength)]
     public string CustomerName { get; set; } = string.Empty;
-
+    
+    [Required]
+    [MaxLength(OrderConsts.MaxCustomerAddressLength)]
+    public string CustomerAddress { get; set; } = string.Empty;
+    
     [MaxLength(OrderConsts.MaxCustomerPhoneLength)]
     public string? CustomerPhone { get; set; }
 

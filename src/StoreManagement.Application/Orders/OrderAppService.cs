@@ -129,6 +129,7 @@ public async Task<OrderDetailsDto> CreateAsync(
     var order =
         await _orderManager.CreateAsync(
             input.CustomerName,
+            input.CustomerAddress,
             input.CustomerPhone,
             input.Note
         );
@@ -160,6 +161,7 @@ public async Task<OrderDetailsDto> UpdateAsync(
 
     order.UpdateHeader(
         input.CustomerName,
+        input.CustomerAddress,
         input.CustomerPhone,
         input.Note
     );
@@ -359,6 +361,7 @@ private static IQueryable<Order> ApplyFilter(
     return query.Where(order =>
         order.OrderNumber.Contains(normalizedFilter) ||
         order.CustomerName.Contains(normalizedFilter) ||
+        order.CustomerAddress.Contains(normalizedFilter) ||
         (
             order.CustomerPhone != null &&
             order.CustomerPhone.Contains(normalizedFilter)
@@ -465,6 +468,7 @@ private static Expression<Func<Order, OrderDto>>
         Id = order.Id,
         OrderNumber = order.OrderNumber,
         CustomerName = order.CustomerName,
+        CustomerAddress = order.CustomerAddress,
         CustomerPhone = order.CustomerPhone,
         Note = order.Note,
 
@@ -521,6 +525,7 @@ private static Expression<Func<Order, OrderDetailsDto>>
         Id = order.Id,
         OrderNumber = order.OrderNumber,
         CustomerName = order.CustomerName,
+        CustomerAddress = order.CustomerAddress,
         CustomerPhone = order.CustomerPhone,
         Note = order.Note,
 

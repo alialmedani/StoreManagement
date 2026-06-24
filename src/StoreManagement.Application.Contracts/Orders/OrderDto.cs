@@ -9,6 +9,8 @@ public class OrderDto : FullAuditedEntityDto<Guid>
     public string OrderNumber { get; set; } = string.Empty;
 
     public string CustomerName { get; set; } = string.Empty;
+    
+    public string CustomerAddress { get; set; } = string.Empty;
 
     public string? CustomerPhone { get; set; }
 

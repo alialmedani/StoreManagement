@@ -12,4 +12,5 @@ public static class OrderConsts
 
     public const int MaxPaymentReferenceNumberLength = 100;
     public const int MaxPaymentNoteLength = 500;
+    public const int MaxCustomerAddressLength = 500;
 }
