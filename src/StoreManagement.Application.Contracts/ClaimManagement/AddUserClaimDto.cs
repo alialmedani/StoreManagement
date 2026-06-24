@@ -13,6 +13,7 @@ public class AddUserClaimDto
     public string ClaimType { get; set; } = string.Empty;
 
     [Required]
+    
     [StringLength(512)]
     public string ClaimValue { get; set; } = string.Empty;
 }

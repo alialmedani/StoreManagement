@@ -13,16 +13,14 @@
       "launchBrowser": true,
       "launchUrl": "swagger/index.html",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+        "ASPNETCORE_ENVIRONMENT": "Production"      }
     },
     "StoreManagement.Web": {
       "commandName": "Project",
       "launchBrowser": true,
       "launchUrl": "swagger/index.html",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
+        "ASPNETCORE_ENVIRONMENT": "Production"      },
       "applicationUrl": "https://localhost:44339"
     }
   }
