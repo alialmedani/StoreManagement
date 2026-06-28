@@ -16,8 +16,7 @@ public class Order : FullAuditedAggregateRoot<Guid>
     public string CustomerName { get; private set; } = string.Empty;
     
     public string CustomerAddress { get; private set; } = string.Empty;
-    public string? CustomerPhone { get; private set; }
-
+    public string CustomerPhone { get; private set; } = string.Empty;
     public string? Note { get; private set; }
 
     public OrderStatus Status { get; private set; }
@@ -59,7 +58,7 @@ public class Order : FullAuditedAggregateRoot<Guid>
         string orderNumber,
         string customerName,
         string customerAddress,
-        string? customerPhone = null,
+        string customerPhone,
         string? note = null)
         : base(id)
     {
@@ -106,12 +105,13 @@ public class Order : FullAuditedAggregateRoot<Guid>
         );
     }
 
-    public void SetCustomerPhone(string? customerPhone)
+    public void SetCustomerPhone(string customerPhone)
     {
-        CustomerPhone = NormalizeOptionalText(
+        CustomerPhone = NormalizeRequiredText(
             customerPhone,
             nameof(CustomerPhone),
-            OrderConsts.MaxCustomerPhoneLength
+            OrderConsts.MaxCustomerPhoneLength,
+            "StoreManagement:OrderCustomerPhoneRequired"
         );
     }
 
@@ -127,7 +127,7 @@ public class Order : FullAuditedAggregateRoot<Guid>
     public void UpdateHeader(
         string customerName,
         string customerAddress,
-        string? customerPhone,
+        string customerPhone,
         string? note)
     {
         EnsureDraft();

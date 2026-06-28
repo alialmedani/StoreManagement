@@ -17,6 +17,7 @@ public class CreateOrderDtoValidator : AbstractValidator<CreateOrderDto>
             .MaximumLength(OrderConsts.MaxCustomerAddressLength)
             .WithMessage($"Customer address cannot exceed {OrderConsts.MaxCustomerAddressLength} characters.");
         RuleFor(input => input.CustomerPhone)
+            .NotEmpty()
             .MaximumLength(OrderConsts.MaxCustomerPhoneLength)
             .When(input => !string.IsNullOrWhiteSpace(input.CustomerPhone))
             .WithMessage($"Customer phone cannot exceed {OrderConsts.MaxCustomerPhoneLength} characters.");

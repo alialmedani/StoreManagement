@@ -20,7 +20,8 @@ public class CreateOrderDto
     
     [MaxLength(OrderConsts.MaxCustomerPhoneLength)]
     public string? CustomerPhone { get; set; }
-
+    
+    [Required]
     [MaxLength(OrderConsts.MaxNoteLength)]
     public string? Note { get; set; }
 
