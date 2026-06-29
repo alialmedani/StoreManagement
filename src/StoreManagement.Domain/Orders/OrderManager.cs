@@ -42,7 +42,7 @@ public class OrderManager : DomainService
     public async Task<Order> CreateAsync(
         string customerName,
         string customerAddress,
-        string? customerPhone,
+        string customerPhone,
         string? note)
     {
         var orderNumberPrefix = await GetSettingValueAsync(

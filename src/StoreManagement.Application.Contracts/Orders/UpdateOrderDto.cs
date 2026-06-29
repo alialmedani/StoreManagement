@@ -12,6 +12,8 @@ public class UpdateOrderDto
     public string CustomerAddress { get; set; } = string.Empty;
 
     [MaxLength(OrderConsts.MaxCustomerPhoneLength)]
+    
+    [Required]
     public string? CustomerPhone { get; set; }
 
     [MaxLength(OrderConsts.MaxNoteLength)]
