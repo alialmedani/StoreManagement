@@ -167,6 +167,54 @@ public class FileAppService :
         );
     }
 
+    [Authorize(StoreManagementPermissions.File.Download)]
+    public async Task<IRemoteStreamContent> GetByEntityAsync(
+        string entityId,
+        MediaEntityType entityType)
+    {
+        if (string.IsNullOrWhiteSpace(entityId))
+        {
+            throw new BusinessException(
+                "StoreManagement:MediaEntityIdRequired"
+            );
+        }
+
+        if (entityType == MediaEntityType.Unknown)
+        {
+            throw new BusinessException(
+                "StoreManagement:MediaEntityTypeInvalid"
+            );
+        }
+
+        var query =
+            await _mediaRepository.GetQueryableAsync();
+
+        var media =
+            await AsyncExecuter.FirstOrDefaultAsync(
+                query.Where(m =>
+                    m.EntityId == entityId.Trim() &&
+                    m.EntityType == entityType)
+                .OrderByDescending(m => m.CreationTime)
+            );
+
+        if (media == null)
+        {
+            throw new EntityNotFoundException(
+                typeof(Media),
+                $"EntityId: {entityId}, EntityType: {entityType}"
+            );
+        }
+
+        var stream =
+            await _blobContainer.GetAsync(media.BlobName);
+
+        return new RemoteStreamContent(
+            stream,
+            media.OriginalFileName,
+            media.ContentType
+        );
+    }
+
     [Authorize(StoreManagementPermissions.File.Delete)]
     public async Task DeleteAsync(Guid id)
     {

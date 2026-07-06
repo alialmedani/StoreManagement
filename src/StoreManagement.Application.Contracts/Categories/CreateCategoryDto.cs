@@ -13,5 +13,7 @@ public class CreateCategoryDto
 
     public CategorySizeType SizeType { get; set; } = CategorySizeType.None;
 
+    public string? ImageUrl { get; set; }
+
     public bool IsActive { get; set; } = true;
 }

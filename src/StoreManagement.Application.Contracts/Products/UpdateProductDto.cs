@@ -19,5 +19,7 @@ public class UpdateProductDto
 
     public ProductTargetAudience TargetAudience { get; set; }
 
+    public string? ImageUrl { get; set; }
+
     public Guid CategoryId { get; set; }
 }

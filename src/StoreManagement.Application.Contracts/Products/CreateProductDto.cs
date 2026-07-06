@@ -19,5 +19,7 @@ public class CreateProductDto
 
     public ProductTargetAudience TargetAudience { get; set; } = ProductTargetAudience.Unisex;
 
+    public string? ImageUrl { get; set; }
+
     public Guid CategoryId { get; set; }
 }

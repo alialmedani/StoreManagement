@@ -19,6 +19,11 @@ public interface IFileAppService : IApplicationService
         string fileName
     );
 
+    Task<IRemoteStreamContent> GetByEntityAsync(
+        string entityId,
+        MediaEntityType entityType
+    );
+
     Task DeleteAsync(
         Guid id
     );
