@@ -14,6 +14,8 @@ public class Category : FullAuditedAggregateRoot<Guid>
 
     public CategorySizeType SizeType { get; private set; }
 
+    public string? ImageUrl { get; private set; }
+
     public bool IsActive { get; private set; }
 
     protected Category()
@@ -65,6 +67,11 @@ public class Category : FullAuditedAggregateRoot<Guid>
     public void SetActive(bool isActive)
     {
         IsActive = isActive;
+    }
+
+    public void SetImageUrl(string? imageUrl)
+    {
+        ImageUrl = imageUrl?.Trim();
     }
 
     public void Restore()

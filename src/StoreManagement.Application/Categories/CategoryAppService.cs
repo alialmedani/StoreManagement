@@ -227,6 +227,8 @@ public class CategoryAppService : ApplicationService, ICategoryAppService
             input.IsActive
         );
 
+        category.SetImageUrl(input.ImageUrl);
+
         await _categoryRepository.InsertAsync(category, autoSave: true);
 
         return MapToDto(category);
@@ -260,6 +262,7 @@ public class CategoryAppService : ApplicationService, ICategoryAppService
         category.SetDescription(input.Description);
         category.ChangeSizeType(input.SizeType);
         category.SetActive(input.IsActive);
+        category.SetImageUrl(input.ImageUrl);
 
         await _categoryRepository.UpdateAsync(category, autoSave: true);
 
@@ -435,6 +438,7 @@ public class CategoryAppService : ApplicationService, ICategoryAppService
             Name = category.Name,
             Description = category.Description,
             IsActive = category.IsActive,
+            ImageUrl = category.ImageUrl,
             SizeType = new LookupDto
             {
                 Id = (int)category.SizeType,

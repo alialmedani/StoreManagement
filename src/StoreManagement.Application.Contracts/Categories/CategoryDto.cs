@@ -12,5 +12,11 @@ public class CategoryDto : FullAuditedEntityDto<Guid>
 
     public LookupDto SizeType { get; set; } = new();
 
+    public string? ImageUrl { get; set; }
+
+    public string? ImageFullUrl => !string.IsNullOrEmpty(ImageUrl) 
+        ? $"/api/app/file/by-file-name/{ImageUrl}" 
+        : null;
+
     public bool IsActive { get; set; }
 }
