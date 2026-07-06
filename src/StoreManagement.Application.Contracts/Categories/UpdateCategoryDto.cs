@@ -13,5 +13,7 @@ public class UpdateCategoryDto
 
     public CategorySizeType SizeType { get; set; }
 
+    public string? ImageUrl { get; set; }
+
     public bool IsActive { get; set; }
 }

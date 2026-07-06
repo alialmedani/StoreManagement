@@ -96,7 +96,8 @@ public class OpenIddictDataSeedContributor :
                 grantTypes: new List<string>
                 {
                     OpenIddictConstants.GrantTypes.AuthorizationCode,
-                    OpenIddictConstants.GrantTypes.RefreshToken
+                    OpenIddictConstants.GrantTypes.RefreshToken,
+                    OpenIddictConstants.GrantTypes.Password
                 },
                 scopes: commonScopes,
                 redirectUris: new List<string>

@@ -24,6 +24,8 @@ public class Product : FullAuditedAggregateRoot<Guid>
 
     public Category Category { get; private set; } = null!;
 
+    public string? ImageUrl { get; private set; }
+
     public ICollection<ProductVariant> Variants { get; private set; } = new List<ProductVariant>();
 
     protected Product()
@@ -94,6 +96,11 @@ public class Product : FullAuditedAggregateRoot<Guid>
     public void SetActive(bool isActive)
     {
         IsActive = isActive;
+    }
+
+    public void SetImageUrl(string? imageUrl)
+    {
+        ImageUrl = imageUrl?.Trim();
     }
 
     public void Restore()

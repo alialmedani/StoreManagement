@@ -223,6 +223,9 @@ protected override void OnModelCreating(ModelBuilder builder)
         b.Property(category => category.SizeType)
             .IsRequired();
 
+        b.Property(category => category.ImageUrl)
+            .HasMaxLength(500);
+
         b.Property(category => category.IsActive)
             .IsRequired();
 
@@ -263,6 +266,9 @@ protected override void OnModelCreating(ModelBuilder builder)
 
         b.Property(product => product.TargetAudience)
             .IsRequired();
+
+        b.Property(product => product.ImageUrl)
+            .HasMaxLength(500);
 
         b.Property(product => product.CategoryId)
             .IsRequired();

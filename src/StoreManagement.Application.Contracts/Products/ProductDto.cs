@@ -18,6 +18,12 @@ public class ProductDto : FullAuditedEntityDto<Guid>
 
     public bool IsActive { get; set; }
 
+    public string? ImageUrl { get; set; }
+
+    public string? ImageFullUrl => !string.IsNullOrEmpty(ImageUrl) 
+        ? $"/api/app/file/by-file-name/{ImageUrl}" 
+        : null;
+
     public EntityLookupDto Category { get; set; } = new();
 
     public LookupDto TargetAudience { get; set; } = new();

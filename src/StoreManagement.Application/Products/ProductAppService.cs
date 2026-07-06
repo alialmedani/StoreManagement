@@ -183,6 +183,7 @@ public class ProductAppService : ApplicationService, IProductAppService
                         .Where(variant => !variant.IsDeleted)
                         .Sum(variant => variant.StockQuantity),
                     IsActive = product.IsActive,
+                    ImageUrl = product.ImageUrl,
                     Category = new EntityLookupDto
                     {
                         Id = product.CategoryId,
@@ -255,6 +256,8 @@ public class ProductAppService : ApplicationService, IProductAppService
             input.IsActive
         );
 
+        product.SetImageUrl(input.ImageUrl);
+
         await _productRepository.InsertAsync(product, autoSave: true);
 
         return await GetDtoAsync(product.Id);
@@ -295,6 +298,7 @@ public class ProductAppService : ApplicationService, IProductAppService
         product.SetPrice(input.Price);
         product.ChangeTargetAudience(input.TargetAudience);
         product.SetActive(input.IsActive);
+        product.SetImageUrl(input.ImageUrl);
 
         await _productRepository.UpdateAsync(product, autoSave: true);
 
@@ -511,6 +515,7 @@ public class ProductAppService : ApplicationService, IProductAppService
                 .Where(variant => !variant.IsDeleted)
                 .Sum(variant => variant.StockQuantity),
             IsActive = product.IsActive,
+            ImageUrl = product.ImageUrl,
             Category = new EntityLookupDto
             {
                 Id = product.CategoryId,
