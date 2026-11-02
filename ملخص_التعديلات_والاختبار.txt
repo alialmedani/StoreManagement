@@ -1,0 +1,135 @@
+═══════════════════════════════════════════════════════════════════
+✅  تم تطبيق التعديلات بنجاح!
+═══════════════════════════════════════════════════════════════════
+
+📋 ما تم عمله:
+
+1. ✅ تعديل appsettings.json - إضافة إعدادات Mobile Client  
+2. ✅ تعديل OpenIddictDataSeedContributor.cs - إضافة Password Grant
+3. ✅ تحديث قاعدة البيانات - DbMigrator
+4. ✅ إعادة بناء المشروع - dotnet build
+
+═══════════════════════════════════════════════════════════════════
+🧪 طريقة الاختبار:
+═══════════════════════════════════════════════════════════════════
+
+الخطوة 1: تأكد من تشغيل التطبيق
+---------------------------------------
+افتح PowerShell وشغل:
+
+    cd C:\src\BACK\StoreManagement\src\StoreManagement.Web
+    dotnet run
+
+انتظر حتى ترى: "Now listening on: https://localhost:44339"
+
+
+الخطوة 2: اختبر تسجيل الدخول
+---------------------------------------
+افتح PowerShell جديد وشغل هذا الكود:
+
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+
+$body = "grant_type=password&client_id=StoreManagement_Mobile&username=admin&password=1q2w3E*&scope=address email phone profile roles offline_access StoreManagement"
+
+$response = Invoke-RestMethod -Uri "https://localhost:44339/connect/token" -Method POST -ContentType "application/x-www-form-urlencoded" -Body $body
+
+Write-Host "Success! Token received:" -ForegroundColor Green
+$response | ConvertTo-Json
+
+
+✅ إذا نجح الطلب = كل شيء يعمل!
+❌ إذا فشل = شوف الخطأ في نهاية هذا الملف
+
+
+═══════════════════════════════════════════════════════════════════
+📱 للاستخدام في Mobile App (Flutter/React Native):
+═══════════════════════════════════════════════════════════════════
+
+URL: https://your-domain.com/connect/token
+Method: POST
+Content-Type: application/x-www-form-urlencoded
+
+Body:
+-----
+grant_type=password
+client_id=StoreManagement_Mobile
+username=admin
+password=1q2w3E*
+scope=address email phone profile roles offline_access StoreManagement
+
+
+Response:
+---------
+{
+  "access_token": "CfDJ8...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "refresh_token": "CfDJ8...",
+  "scope": "address email phone profile roles offline_access StoreManagement"
+}
+
+
+═══════════════════════════════════════════════════════════════════
+🔄 Refresh Token:
+═══════════════════════════════════════════════════════════════════
+
+Body:
+-----
+grant_type=refresh_token
+client_id=StoreManagement_Mobile
+refresh_token=<الـ refresh_token من الخطوة السابقة>
+
+
+═══════════════════════════════════════════════════════════════════
+📂 الملفات المُعدلة:
+═══════════════════════════════════════════════════════════════════
+
+1. C:\src\BACK\StoreManagement\src\StoreManagement.Web\appsettings.json
+   → تمت إضافة OpenIddict:Applications:StoreManagement_Mobile
+
+2. C:\src\BACK\StoreManagement\src\StoreManagement.Domain\OpenIddict\OpenIddictDataSeedContributor.cs
+   → تمت إضافة OpenIddictConstants.GrantTypes.Password في السطر 100
+
+3. قاعدة البيانات:
+   → تم تحديث OpenIddictApplications table
+
+═══════════════════════════════════════════════════════════════════
+📚 ملفات إضافية تم إنشاؤها:
+═══════════════════════════════════════════════════════════════════
+
+1. test-mobile-login.http
+   → لاختبار الـ API مع REST Client Extension
+
+2. reset-mobile-client.sql
+   → لحذف وإعادة إنشاء Mobile Client إذا لزم الأمر
+
+
+═══════════════════════════════════════════════════════════════════
+❓ إذا واجهت مشكلة "unauthorized_client":
+═══════════════════════════════════════════════════════════════════
+
+1. تأكد من إيقاف التطبيق:
+   Get-Process -Name "dotnet" | Stop-Process -Force
+
+2. احذف Mobile Client القديم:
+   sqlcmd -S "(LocalDb)\MSSQLLocalDB" -d StoreManagement -E -i "C:\src\BACK\StoreManagement\reset-mobile-client.sql"
+
+3. أعد تشغيل DbMigrator:
+   cd C:\src\BACK\StoreManagement\src\StoreManagement.DbMigrator
+   dotnet run
+
+4. شغل التطبيق من جديد:
+   cd C:\src\BACK\StoreManagement\src\StoreManagement.Web
+   dotnet run
+
+5. جرب مرة أخرى!
+
+
+═══════════════════════════════════════════════════════════════════
+✅ تم بنجاح!
+═══════════════════════════════════════════════════════════════════
+
+الآن تطبيقك جاهز لاستقبال طلبات تسجيل الدخول من Mobile Apps!
+
+تاريخ التعديل: 2026-07-02
+
