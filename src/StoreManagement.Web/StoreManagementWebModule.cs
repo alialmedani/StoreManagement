@@ -189,6 +189,7 @@ public class StoreManagementWebModule : AbpModule
             options.Map(StoreManagementDomainErrorCodes.ProductVariantNotFound, HttpStatusCode.BadRequest);
             options.Map(StoreManagementDomainErrorCodes.ProductVariantProductNotFound, HttpStatusCode.BadRequest);
             options.Map(StoreManagementDomainErrorCodes.ProductVariantInvalidSizeForCategory, HttpStatusCode.BadRequest);
+            options.Map(StoreManagementDomainErrorCodes.ProductVariantCostPriceInvalid, HttpStatusCode.BadRequest);
 
             options.Map(StoreManagementDomainErrorCodes.ProductVariantHasStock, HttpStatusCode.Conflict);
             options.Map(StoreManagementDomainErrorCodes.ProductVariantHasMovements, HttpStatusCode.Conflict);

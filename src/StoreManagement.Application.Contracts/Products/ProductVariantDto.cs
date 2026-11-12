@@ -16,6 +16,8 @@ public class ProductVariantDto : FullAuditedEntityDto<Guid>
 
     public int StockQuantity { get; set; }
 
+    public decimal? CostPrice { get; set; }
+
     public LookupDto AvailabilityStatus { get; set; } = new();
 
     public bool IsActive { get; set; }

@@ -17,5 +17,11 @@ public class CreateProductVariantDto
     [Range(0, int.MaxValue)]
     public int StockQuantity { get; set; }
 
+    /// <summary>
+    /// Optional unit cost used for profit/margin reporting.
+    /// </summary>
+    [Range(0, (double)decimal.MaxValue)]
+    public decimal? CostPrice { get; set; }
+
     public bool IsActive { get; set; } = true;
 }

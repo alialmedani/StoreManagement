@@ -17,6 +17,7 @@ public static class StoreManagementDomainErrorCodes
     public const string ProductVariantSizeRequired = "StoreManagement:ProductVariantSizeRequired";
     public const string ProductVariantTextTooLong = "StoreManagement:ProductVariantTextTooLong";
     public const string ProductVariantStockCannotBeNegative = "StoreManagement:ProductVariantStockCannotBeNegative";
+    public const string ProductVariantCostPriceInvalid = "StoreManagement:ProductVariantCostPriceInvalid";
     public const string CategoryHasProducts = "StoreManagement:CategoryHasProducts";
     public const string CategorySizeTypeCannotBeChanged = "StoreManagement:CategorySizeTypeCannotBeChanged";
     

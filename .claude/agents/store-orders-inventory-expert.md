@@ -16,6 +16,8 @@ Read `CLAUDE.md`, then `src/StoreManagement.Domain/Orders/*`, `Inventory/*`, `Pr
 6. **Atomicity:** each business operation is one unit of work; no partial stock/order updates.
 7. **Soft-deleted** variants/products can't be added to new orders; existing order lines keep their snapshot.
 8. Every rejection is a coded, en+ar-localized `BusinessException` with an HTTP mapping.
+9. **Cost snapshot:** `OrderItem.CostPriceAtSale` (nullable) is captured once, only in `OrderManager.ConfirmAsync`, from the variant's current `CostPrice` (set via the guarded `OrderItem.SetCostPriceSnapshot`). Never backfilled (pre-feature items stay null), never changed after confirm. Profit reporting must use this snapshot, not the live cost.
+10. **Cost history ledger:** `ProductVariantCostHistory` (append-only, `CreationAuditedEntity`) records old→new `CostPrice` changes, written from `ProductVariantAppService` create/update only when the value actually differs.
 
 ## Process
 Describe the rule change and the invariants affected before coding; implement in Domain; add/adjust tests that prove the invariant (positive + violation); hand app-layer wiring to `store-backend-dev`; flag contract changes for `docs/MOBILE_HANDOFF.md`.

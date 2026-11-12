@@ -68,6 +68,13 @@ public async Task<PagedResultDto<OrderDto>>
         );
     }
 
+    if (DevExtremeDataSourceHelper.HasLoadOptions(input))
+    {
+        var dxQuery = query.Select(MapToDtoExpression());
+
+        return await DevExtremeDataSourceHelper.LoadAsync(dxQuery, input);
+    }
+
     query = ApplyFilter(query, input.Filter);
     query = ApplySorting(query, input.Sorting);
 

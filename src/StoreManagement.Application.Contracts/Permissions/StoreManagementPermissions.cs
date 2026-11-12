@@ -48,6 +48,17 @@ public static class StoreManagementPermissions
         public const string RecordPayment = Default + ".RecordPayment";
     }
 
+    public static class Reports
+    {
+        public const string Default = GroupName + ".Reports";
+        public const string SalesSummary = Default + ".SalesSummary";
+        public const string InventoryStatus = Default + ".InventoryStatus";
+        public const string TopSellers = Default + ".TopSellers";
+        public const string StockMovements = Default + ".StockMovements";
+        public const string CategoryPerformance = Default + ".CategoryPerformance";
+        public const string ProfitMargin = Default + ".ProfitMargin";
+    }
+
     public static class File
     {
         public const string Default = GroupName + ".File";

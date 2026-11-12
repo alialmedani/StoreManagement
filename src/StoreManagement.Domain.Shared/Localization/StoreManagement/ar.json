@@ -37,6 +37,14 @@
     "Unspecified": "نظام",
     "SeeAllUsers": "رؤية كافة المستخدمين",
     "TakePhoto": "تصوير",
-    "ChoosePhoto": "اختر صورة"
+    "ChoosePhoto": "اختر صورة",
+    "Permission:Reports": "التقارير",
+    "Permission:Reports.SalesSummary": "تقرير ملخص المبيعات",
+    "Permission:Reports.InventoryStatus": "تقرير حالة المخزون",
+    "Permission:Reports.TopSellers": "تقرير الأكثر مبيعًا",
+    "Permission:Reports.StockMovements": "تقرير حركات المخزون",
+    "Permission:Reports.CategoryPerformance": "تقرير أداء الفئات",
+    "Permission:Reports.ProfitMargin": "تقرير هامش الربح",
+    "StoreManagement:ProductVariantCostPriceInvalid": "لا يمكن أن يكون سعر التكلفة سالبًا."
   }
 }

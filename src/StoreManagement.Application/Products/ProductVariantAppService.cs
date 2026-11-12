@@ -24,6 +24,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
     private readonly IRepository<ProductVariant, Guid> _productVariantRepository;
     private readonly IRepository<Product, Guid> _productRepository;
     private readonly InventoryManager _inventoryManager;
+    private readonly ProductVariantCostManager _costManager;
     private readonly IDataFilter<ISoftDelete> _softDeleteFilter;
     private readonly ISettingProvider _settingProvider;
 
@@ -31,12 +32,14 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
         IRepository<ProductVariant, Guid> productVariantRepository,
         IRepository<Product, Guid> productRepository,
         InventoryManager inventoryManager,
+        ProductVariantCostManager costManager,
         IDataFilter<ISoftDelete> softDeleteFilter,
         ISettingProvider settingProvider)
     {
         _productVariantRepository = productVariantRepository;
         _productRepository = productRepository;
         _inventoryManager = inventoryManager;
+        _costManager = costManager;
         _softDeleteFilter = softDeleteFilter;
         _settingProvider = settingProvider;
     }
@@ -47,9 +50,21 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         var query = await _productVariantRepository.GetQueryableAsync();
 
-        query = ApplyFilter(query, input.Filter);
         query = ApplyCategoryFilter(query, input.CategoryId);
         query = ApplyAvailabilityStatusFilter(query, input.AvailabilityStatus, lowStockThreshold);
+
+        if (DevExtremeDataSourceHelper.HasLoadOptions(input))
+        {
+            var dxQuery = query.Select(MapToDtoExpression());
+
+            var dxResult = await DevExtremeDataSourceHelper.LoadAsync(dxQuery, input);
+
+            ApplyAvailabilityStatus(dxResult.Items, lowStockThreshold);
+
+            return dxResult;
+        }
+
+        query = ApplyFilter(query, input.Filter);
         query = ApplySorting(query, input.Sorting);
 
         var totalCount = await AsyncExecuter.CountAsync(query);
@@ -76,9 +91,21 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         query = query.Where(variant => variant.ProductId == productId);
 
-        query = ApplyFilter(query, input.Filter);
         query = ApplyCategoryFilter(query, input.CategoryId);
         query = ApplyAvailabilityStatusFilter(query, input.AvailabilityStatus, lowStockThreshold);
+
+        if (DevExtremeDataSourceHelper.HasLoadOptions(input))
+        {
+            var dxQuery = query.Select(MapToDtoExpression());
+
+            var dxResult = await DevExtremeDataSourceHelper.LoadAsync(dxQuery, input);
+
+            ApplyAvailabilityStatus(dxResult.Items, lowStockThreshold);
+
+            return dxResult;
+        }
+
+        query = ApplyFilter(query, input.Filter);
         query = ApplySorting(query, input.Sorting);
 
         var totalCount = await AsyncExecuter.CountAsync(query);
@@ -105,9 +132,21 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
             query = query.Where(variant => variant.IsDeleted);
 
-            query = ApplyFilter(query, input.Filter);
             query = ApplyCategoryFilter(query, input.CategoryId);
             query = ApplyAvailabilityStatusFilter(query, input.AvailabilityStatus, lowStockThreshold);
+
+            if (DevExtremeDataSourceHelper.HasLoadOptions(input))
+            {
+                var dxQuery = query.Select(MapToDtoExpression());
+
+                var dxResult = await DevExtremeDataSourceHelper.LoadAsync(dxQuery, input);
+
+                ApplyAvailabilityStatus(dxResult.Items, lowStockThreshold);
+
+                return dxResult;
+            }
+
+            query = ApplyFilter(query, input.Filter);
             query = ApplySorting(query, input.Sorting);
 
             var totalCount = await AsyncExecuter.CountAsync(query);
@@ -259,6 +298,8 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
 
         await _productVariantRepository.InsertAsync(variant, autoSave: true);
 
+        await _costManager.ChangeCostPriceAsync(variant, input.CostPrice);
+
         await CreateOpeningStockMovementIfNeededAsync(variant);
 
         return await GetAsync(variant.Id);
@@ -393,6 +434,8 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
         variant.SetActive(input.IsActive);
 
         await _productVariantRepository.UpdateAsync(variant, autoSave: true);
+
+        await _costManager.ChangeCostPriceAsync(variant, input.CostPrice);
 
         return await GetAsync(variant.Id);
     }
@@ -663,6 +706,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
             Color = variant.Color,
             Size = variant.Size,
             StockQuantity = variant.StockQuantity,
+            CostPrice = variant.CostPrice,
             IsActive = variant.IsActive,
             CreationTime = variant.CreationTime,
             CreatorId = variant.CreatorId,
@@ -682,7 +726,7 @@ public class ProductVariantAppService : ApplicationService, IProductVariantAppSe
     }
 
     private static void ApplyAvailabilityStatus(
-        List<ProductVariantDto> items,
+        IReadOnlyList<ProductVariantDto> items,
         int lowStockThreshold)
     {
         foreach (var item in items)

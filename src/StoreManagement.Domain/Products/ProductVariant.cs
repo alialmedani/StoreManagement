@@ -20,6 +20,13 @@ public class ProductVariant : FullAuditedEntity<Guid>
 
     public int StockQuantity { get; private set; }
 
+    /// <summary>
+    /// Unit cost of the variant, used for profit/margin reporting.
+    /// Null means cost data has not been captured yet
+    /// (historical variants created before cost tracking).
+    /// </summary>
+    public decimal? CostPrice { get; private set; }
+
     public bool IsActive { get; private set; }
 
     protected ProductVariant()
@@ -32,13 +39,25 @@ public class ProductVariant : FullAuditedEntity<Guid>
         string color,
         string size,
         int stockQuantity,
-        bool isActive = true)
+        bool isActive = true,
+        decimal? costPrice = null)
         : base(id)
     {
         ProductId = productId;
         SetColorAndSize(color, size);
         SetStockQuantity(stockQuantity, allowNegativeStock: false);
+        SetCostPrice(costPrice);
         IsActive = isActive;
+    }
+
+    public void SetCostPrice(decimal? costPrice)
+    {
+        if (costPrice.HasValue && costPrice.Value < 0)
+        {
+            throw new BusinessException(StoreManagementDomainErrorCodes.ProductVariantCostPriceInvalid);
+        }
+
+        CostPrice = costPrice;
     }
 
     public void SetColorAndSize(string color, string size)

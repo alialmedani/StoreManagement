@@ -23,5 +23,10 @@ public class CreateProductVariantDtoValidator : AbstractValidator<CreateProductV
         RuleFor(input => input.StockQuantity)
             .GreaterThanOrEqualTo(0)
             .WithMessage("Stock quantity cannot be negative.");
+
+        RuleFor(input => input.CostPrice)
+            .GreaterThanOrEqualTo(0)
+            .When(input => input.CostPrice.HasValue)
+            .WithMessage("Cost price cannot be negative.");
     }
 }

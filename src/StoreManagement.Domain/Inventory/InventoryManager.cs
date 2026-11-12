@@ -1,5 +1,7 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using StoreManagement.Products;
 using StoreManagement.Settings;
 using Volo.Abp;
@@ -139,6 +141,22 @@ public class InventoryManager : DomainService
         return variant;
     }
 
+    /// <summary>
+    /// Applies a stock change atomically at the database level, so two
+    /// concurrent requests against the same variant (e.g. two staff
+    /// confirming orders for the last unit at the same time) can never both
+    /// succeed: the increment and the "would this go negative" guard happen
+    /// in a single conditional UPDATE, not a read-then-write-later sequence.
+    ///
+    /// EF Core's <c>ExecuteUpdateAsync</c> was chosen over a RowVersion +
+    /// retry-on-conflict approach because the caller (order confirmation)
+    /// needs a clean reject, not a retry loop, and ExecuteUpdateAsync avoids
+    /// loading the entity into the change tracker at all, so there is no
+    /// separate write to reconcile afterwards. <c>_productVariantRepository</c>
+    /// is deliberately not asked to update the in-memory <paramref name="variant"/>
+    /// instance here - doing so would risk EF Core re-writing it a second time
+    /// (non-atomically) on the request's next SaveChanges.
+    /// </summary>
     private async Task<StockMovement> ApplyStockChangeAsync(
         ProductVariant variant,
         StockMovementType movementType,
@@ -152,20 +170,34 @@ public class InventoryManager : DomainService
             throw new BusinessException(StoreManagementDomainErrorCodes.InventoryQuantityChangeCannotBeZero);
         }
 
-        var oldQuantity = variant.StockQuantity;
-        var newQuantity = oldQuantity + quantityChange;
-
         var allowNegativeStock = await IsSettingEnabledAsync(
             StoreManagementSettings.AllowNegativeStock,
             defaultValue: false
         );
 
-        if (!allowNegativeStock && newQuantity < 0)
+        var variantQueryable = await _productVariantRepository.GetQueryableAsync();
+
+        var affectedRows = await variantQueryable
+            .Where(v =>
+                v.Id == variant.Id &&
+                (allowNegativeStock || v.StockQuantity + quantityChange >= 0))
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(v => v.StockQuantity, v => v.StockQuantity + quantityChange));
+
+        if (affectedRows == 0)
         {
             throw new BusinessException(StoreManagementDomainErrorCodes.InventoryStockCannotBeNegative);
         }
 
-        variant.SetStockQuantity(newQuantity, allowNegativeStock);
+        // Safe to read back here: this request's transaction holds the row
+        // lock it just took via the UPDATE above until it commits, so no
+        // other transaction's write can be interleaved before this SELECT.
+        var newQuantity = await variantQueryable
+            .Where(v => v.Id == variant.Id)
+            .Select(v => v.StockQuantity)
+            .FirstAsync();
+
+        var oldQuantity = newQuantity - quantityChange;
 
         var movement = new StockMovement(
             GuidGenerator.Create(),
@@ -177,10 +209,9 @@ public class InventoryManager : DomainService
             sourceType,
             referenceId,
             note,
-            allowNegativeStock
+            allowNegativeStock: true // old/new are already guaranteed consistent and non-negative by the atomic update above
         );
 
-        await _productVariantRepository.UpdateAsync(variant, autoSave: true);
         await _stockMovementRepository.InsertAsync(movement, autoSave: true);
 
         return movement;

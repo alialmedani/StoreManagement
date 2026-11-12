@@ -140,6 +140,42 @@ public class StoreManagementPermissionDefinitionProvider
             L("Permission:Orders.RecordPayment")
         );
 
+        var reportsPermission =
+            storeManagementGroup.AddPermission(
+                StoreManagementPermissions.Reports.Default,
+                L("Permission:Reports")
+            );
+
+        reportsPermission.AddChild(
+            StoreManagementPermissions.Reports.SalesSummary,
+            L("Permission:Reports.SalesSummary")
+        );
+
+        reportsPermission.AddChild(
+            StoreManagementPermissions.Reports.InventoryStatus,
+            L("Permission:Reports.InventoryStatus")
+        );
+
+        reportsPermission.AddChild(
+            StoreManagementPermissions.Reports.TopSellers,
+            L("Permission:Reports.TopSellers")
+        );
+
+        reportsPermission.AddChild(
+            StoreManagementPermissions.Reports.StockMovements,
+            L("Permission:Reports.StockMovements")
+        );
+
+        reportsPermission.AddChild(
+            StoreManagementPermissions.Reports.CategoryPerformance,
+            L("Permission:Reports.CategoryPerformance")
+        );
+
+        reportsPermission.AddChild(
+            StoreManagementPermissions.Reports.ProfitMargin,
+            L("Permission:Reports.ProfitMargin")
+        );
+
         var filePermission =
             storeManagementGroup.AddPermission(
                 StoreManagementPermissions.File.Default,

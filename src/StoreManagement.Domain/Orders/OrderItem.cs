@@ -27,6 +27,13 @@ public class OrderItem : FullAuditedEntity<Guid>
 
     public decimal LineTotal { get; private set; }
 
+    /// <summary>
+    /// Captured once from the ProductVariant's CostPrice at the moment the order
+    /// is confirmed. Null for items confirmed before cost tracking existed, and
+    /// stays null forever (never backfilled).
+    /// </summary>
+    public decimal? CostPriceAtSale { get; private set; }
+
     protected OrderItem()
     {
     }
@@ -80,6 +87,16 @@ public class OrderItem : FullAuditedEntity<Guid>
 
         UnitPrice = unitPrice;
         RecalculateLineTotal();
+    }
+
+    public void SetCostPriceSnapshot(decimal? costPrice)
+    {
+        if (costPrice.HasValue && costPrice.Value < 0)
+        {
+            throw new BusinessException(StoreManagementDomainErrorCodes.ProductVariantCostPriceInvalid);
+        }
+
+        CostPriceAtSale = costPrice;
     }
 
     private void SetProductSnapshot(

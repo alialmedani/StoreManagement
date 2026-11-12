@@ -15,5 +15,10 @@ public class UpdateProductVariantDtoValidator : AbstractValidator<UpdateProductV
             .MaximumLength(ProductVariantConsts.MaxSizeLength)
             .When(input => !string.IsNullOrWhiteSpace(input.Size))
             .WithMessage($"Size cannot exceed {ProductVariantConsts.MaxSizeLength} characters.");
+
+        RuleFor(input => input.CostPrice)
+            .GreaterThanOrEqualTo(0)
+            .When(input => input.CostPrice.HasValue)
+            .WithMessage("Cost price cannot be negative.");
     }
 }

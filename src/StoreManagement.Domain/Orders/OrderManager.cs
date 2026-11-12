@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using StoreManagement.Inventory;
@@ -177,6 +178,9 @@ public class OrderManager : DomainService
             })
             .ToList();
 
+        var costByVariant =
+            new Dictionary<Guid, decimal?>();
+
         foreach (var itemGroup in quantityByVariant)
         {
             var variantInfo =
@@ -193,12 +197,23 @@ public class OrderManager : DomainService
                         .OrderInsufficientStock
                 );
             }
+
+            costByVariant[itemGroup.ProductVariantId] =
+                variantInfo.CostPrice;
         }
 
         order.Confirm();
 
         foreach (var item in order.Items)
         {
+            item.SetCostPriceSnapshot(
+                costByVariant.TryGetValue(
+                    item.ProductVariantId,
+                    out var snapshotCost)
+                    ? snapshotCost
+                    : null
+            );
+
             await _inventoryManager.RecordSaleAsync(
                 order.Id,
                 item.ProductVariantId,
@@ -384,7 +399,8 @@ public class OrderManager : DomainService
                             variant.Product.Price,
                             variant.IsActive,
                             variant.Product.IsActive,
-                            variant.Product.Category.IsActive
+                            variant.Product.Category.IsActive,
+                            variant.CostPrice
                         ))
             );
 
@@ -451,6 +467,7 @@ public class OrderManager : DomainService
         decimal Price,
         bool IsActive,
         bool ProductIsActive,
-        bool CategoryIsActive
+        bool CategoryIsActive,
+        decimal? CostPrice
     );
 }

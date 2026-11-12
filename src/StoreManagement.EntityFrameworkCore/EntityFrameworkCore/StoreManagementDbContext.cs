@@ -40,6 +40,8 @@ public DbSet<Product> Products { get; set; }
 
 public DbSet<ProductVariant> ProductVariants { get; set; }
 
+public DbSet<ProductVariantCostHistory> ProductVariantCostHistories { get; set; }
+
 public DbSet<StockMovement> StockMovements { get; set; }
 
 public DbSet<Order> Orders { get; set; }
@@ -326,6 +328,9 @@ protected override void OnModelCreating(ModelBuilder builder)
         b.Property(variant => variant.StockQuantity)
             .IsRequired();
 
+        b.Property(variant => variant.CostPrice)
+            .HasPrecision(18, 2);
+
         b.Property(variant => variant.IsActive)
             .IsRequired()
             .HasDefaultValue(true);
@@ -351,6 +356,17 @@ protected override void OnModelCreating(ModelBuilder builder)
             .HasDatabaseName(
                 "IX_StoreManagement_ProductVariants_ProductId"
             );
+    });
+
+    builder.Entity<ProductVariantCostHistory>(b =>
+    {
+        b.ToTable(StoreManagementConsts.DbTablePrefix + "ProductVariantCostHistories", StoreManagementConsts.DbSchema);
+        b.ConfigureByConvention();
+        b.Property(h => h.ProductVariantId).IsRequired();
+        b.Property(h => h.PreviousCostPrice).HasPrecision(18, 2);
+        b.Property(h => h.NewCostPrice).HasPrecision(18, 2);
+        b.HasIndex(h => h.ProductVariantId).HasDatabaseName("IX_StoreManagement_ProductVariantCostHistories_ProductVariantId");
+        b.HasIndex(h => h.CreationTime).HasDatabaseName("IX_StoreManagement_ProductVariantCostHistories_CreationTime");
     });
 
     builder.Entity<StockMovement>(b =>
@@ -596,6 +612,9 @@ protected override void OnModelCreating(ModelBuilder builder)
 
         b.Property(item => item.LineTotal)
             .IsRequired()
+            .HasPrecision(18, 2);
+
+        b.Property(item => item.CostPriceAtSale)
             .HasPrecision(18, 2);
 
         b.HasOne(item => item.Order)

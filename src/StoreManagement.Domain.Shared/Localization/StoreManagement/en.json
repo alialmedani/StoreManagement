@@ -17,6 +17,7 @@
     "StoreManagement:ProductVariantProductNotFound": "Product does not exist.",
     "StoreManagement:ProductVariantInvalidSizeForCategory": "Variant size is not valid for this product category.",
     "StoreManagement:ProductVariantHasStock": "Cannot delete product variant because it has stock.",
+    "StoreManagement:ProductVariantCostPriceInvalid": "Cost price cannot be negative.",
     "StoreManagement:ProductVariantCannotRestoreDuplicate": "Cannot restore product variant because another active variant with the same color and size already exists.",
     "StoreManagement:ProductHasVariants": "Cannot delete product because it has variants. Deactivate it instead.",
     "StoreManagement:InventoryProductVariantNotFound": "Product variant does not exist.",
@@ -81,6 +82,14 @@
     "Permission:Orders.Confirm": "Confirm order",
     "Permission:Orders.Cancel": "Cancel order",
     "Permission:Orders.RecordPayment": "Record order payment",
+
+    "Permission:Reports": "Reports",
+    "Permission:Reports.SalesSummary": "Sales summary report",
+    "Permission:Reports.InventoryStatus": "Inventory status report",
+    "Permission:Reports.TopSellers": "Top sellers report",
+    "Permission:Reports.StockMovements": "Stock movements report",
+    "Permission:Reports.CategoryPerformance": "Category performance report",
+    "Permission:Reports.ProfitMargin": "Profit margin report",
 
     "DisplayName:LowStockThreshold": "Low stock threshold"
   }

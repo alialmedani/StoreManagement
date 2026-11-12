@@ -46,9 +46,21 @@ public class ProductAppService : ApplicationService, IProductAppService
 
         var query = await _productRepository.GetQueryableAsync();
 
-        query = ApplyFilter(query, input.Filter);
         query = ApplyCategoryFilter(query, input.CategoryId);
         query = ApplyAvailabilityStatusFilter(query, input.AvailabilityStatus, lowStockThreshold);
+
+        if (DevExtremeDataSourceHelper.HasLoadOptions(input))
+        {
+            var dxQuery = query.Select(MapToProductDtoExpression());
+
+            var dxResult = await DevExtremeDataSourceHelper.LoadAsync(dxQuery, input);
+
+            ApplyAvailabilityStatus(dxResult.Items, lowStockThreshold);
+
+            return dxResult;
+        }
+
+        query = ApplyFilter(query, input.Filter);
         query = ApplySorting(query, input.Sorting);
 
         var totalCount = await AsyncExecuter.CountAsync(query);
@@ -75,9 +87,21 @@ public class ProductAppService : ApplicationService, IProductAppService
 
             query = query.Where(product => product.IsDeleted);
 
-            query = ApplyFilter(query, input.Filter);
             query = ApplyCategoryFilter(query, input.CategoryId);
             query = ApplyAvailabilityStatusFilter(query, input.AvailabilityStatus, lowStockThreshold);
+
+            if (DevExtremeDataSourceHelper.HasLoadOptions(input))
+            {
+                var dxQuery = query.Select(MapToProductDtoExpression());
+
+                var dxResult = await DevExtremeDataSourceHelper.LoadAsync(dxQuery, input);
+
+                ApplyAvailabilityStatus(dxResult.Items, lowStockThreshold);
+
+                return dxResult;
+            }
+
+            query = ApplyFilter(query, input.Filter);
             query = ApplySorting(query, input.Sorting);
 
             var totalCount = await AsyncExecuter.CountAsync(query);
@@ -544,7 +568,7 @@ public class ProductAppService : ApplicationService, IProductAppService
     }
 
     private static void ApplyAvailabilityStatus(
-        List<ProductDto> items,
+        IReadOnlyList<ProductDto> items,
         int lowStockThreshold)
     {
         foreach (var item in items)

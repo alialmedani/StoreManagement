@@ -37,6 +37,14 @@ public class InventoryAppService :
         var query = await _stockMovementRepository.GetQueryableAsync();
 
         query = ApplyStructuredFilters(query, input);
+
+        if (DevExtremeDataSourceHelper.HasLoadOptions(input))
+        {
+            var dxQuery = query.Select(MapToDtoExpression());
+
+            return await DevExtremeDataSourceHelper.LoadAsync(dxQuery, input);
+        }
+
         query = ApplyTextFilter(query, input.Filter);
         query = ApplySorting(query, input.Sorting);
 

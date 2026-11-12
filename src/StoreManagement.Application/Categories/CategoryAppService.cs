@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using StoreManagement.Common;
@@ -40,6 +41,13 @@ public class CategoryAppService : ApplicationService, ICategoryAppService
     {
         var query = await _categoryRepository.GetQueryableAsync();
 
+        if (DevExtremeDataSourceHelper.HasLoadOptions(input))
+        {
+            var dxQuery = query.Select(MapToDtoExpression());
+
+            return await DevExtremeDataSourceHelper.LoadAsync(dxQuery, input);
+        }
+
         query = ApplyFilter(query, input.Filter);
         query = ApplySorting(query, input.Sorting);
 
@@ -65,6 +73,13 @@ public class CategoryAppService : ApplicationService, ICategoryAppService
 
             query = query.Where(category => category.IsDeleted);
 
+            if (DevExtremeDataSourceHelper.HasLoadOptions(input))
+            {
+                var dxQuery = query.Select(MapToDtoExpression());
+
+                return await DevExtremeDataSourceHelper.LoadAsync(dxQuery, input);
+            }
+
             query = ApplyFilter(query, input.Filter);
             query = ApplySorting(query, input.Sorting);
 
@@ -89,7 +104,12 @@ public class CategoryAppService : ApplicationService, ICategoryAppService
 
         var categoryQuery = await _categoryRepository.GetQueryableAsync();
 
-        categoryQuery = ApplyFilter(categoryQuery, input.Filter);
+        // In DX mode `input.Filter` carries the DevExtreme filter JSON (applied later by the DX load over
+        // the computed summaries), so the legacy plain-text filter must only run in legacy mode.
+        if (!DevExtremeDataSourceHelper.HasLoadOptions(input))
+        {
+            categoryQuery = ApplyFilter(categoryQuery, input.Filter);
+        }
 
         var categories = await AsyncExecuter.ToListAsync(categoryQuery);
 
@@ -186,6 +206,11 @@ public class CategoryAppService : ApplicationService, ICategoryAppService
             input.AvailabilityStatus,
             lowStockThreshold
         );
+
+        if (DevExtremeDataSourceHelper.HasLoadOptions(input))
+        {
+            return await DevExtremeDataSourceHelper.LoadAsync(summaries.AsQueryable(), input);
+        }
 
         summaries = ApplyStockSummarySorting(summaries, input.Sorting);
 
@@ -433,6 +458,30 @@ public class CategoryAppService : ApplicationService, ICategoryAppService
     private static CategoryDto MapToDto(Category category)
     {
         return new CategoryDto
+        {
+            Id = category.Id,
+            Name = category.Name,
+            Description = category.Description,
+            IsActive = category.IsActive,
+            ImageUrl = category.ImageUrl,
+            SizeType = new LookupDto
+            {
+                Id = (int)category.SizeType,
+                Name = category.SizeType.ToString()
+            },
+            CreationTime = category.CreationTime,
+            CreatorId = category.CreatorId,
+            LastModificationTime = category.LastModificationTime,
+            LastModifierId = category.LastModifierId,
+            IsDeleted = category.IsDeleted,
+            DeleterId = category.DeleterId,
+            DeletionTime = category.DeletionTime
+        };
+    }
+
+    private static Expression<Func<Category, CategoryDto>> MapToDtoExpression()
+    {
+        return category => new CategoryDto
         {
             Id = category.Id,
             Name = category.Name,
